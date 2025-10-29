@@ -1,85 +1,8 @@
 import { Type } from "@google/genai";
-import { add, divide, multiply, subtract } from "../utils/mathFunctions";
 import { Expense } from "../types/models";
 import { ExpenseService } from "./expenseService";
 
 // Function declarations
-const addDeclaration = {
-  name: "addNumbers",
-  parameters: {
-    type: Type.OBJECT,
-    description: "Return the result of adding two numbers.",
-    properties: {
-      a: {
-        type: Type.NUMBER,
-        description: "The first parameter which can be an integer or a floating point number.",
-      },
-      b: {
-        type: Type.NUMBER,
-        description: "The second parameter which can be an integer or a floating point number.",
-      },
-    },
-    required: ["a", "b"],
-  },
-};
-
-const subtractDeclaration = {
-  name: "subtractNumbers",
-  parameters: {
-    type: Type.OBJECT,
-    description: "Return the result of subtracting the second number from the first.",
-    properties: {
-      a: {
-        type: Type.NUMBER,
-        description: "The first parameter.",
-      },
-      b: {
-        type: Type.NUMBER,
-        description: "The second parameter.",
-      },
-    },
-    required: ["a", "b"],
-  },
-};
-
-const multiplyDeclaration = {
-  name: "multiplyNumbers",
-  parameters: {
-    type: Type.OBJECT,
-    description: "Return the product of two numbers.",
-    properties: {
-      a: {
-        type: Type.NUMBER,
-        description: "The first parameter.",
-      },
-      b: {
-        type: Type.NUMBER,
-        description: "The second parameter.",
-      },
-    },
-    required: ["a", "b"],
-  },
-};
-
-const divideDeclaration = {
-  name: "divideNumbers",
-  parameters: {
-    type: Type.OBJECT,
-    description: "Return the quotient of dividing the first number by the second.",
-    properties: {
-      a: {
-        type: Type.NUMBER,
-        description: "The first parameter.",
-      },
-      b: {
-        type: Type.NUMBER,
-        description: "The second parameter.",
-      },
-    },
-    required: ["a", "b"],
-  },
-};
-
 const expenseDeclaration = {
   name: "addExpense",
   parameters: {
@@ -118,21 +41,11 @@ export class FunctionDeclarationService {
   private readonly expenseService: ExpenseService;
 
   private readonly functionMapping = new Map<string, Function>([
-    // Math functions
-    ["addNumbers", (params: { a: number; b: number }) => add(params.a, params.b)],
-    ["subtractNumbers", (params: { a: number; b: number }) => subtract(params.a, params.b)],
-    ["multiplyNumbers", (params: { a: number; b: number }) => multiply(params.a, params.b)],
-    ["divideNumbers", (params: { a: number; b: number }) => divide(params.a, params.b)],
-
     // Expense functions (async)
     ["addExpense", async (params: { expenseData: Expense }) => await this.expenseService.addExpense(params.expenseData)],
   ]);
 
   private readonly functionDeclarations = [
-    addDeclaration,
-    subtractDeclaration,
-    multiplyDeclaration,
-    divideDeclaration,
     expenseDeclaration
   ];
 
@@ -141,7 +54,7 @@ export class FunctionDeclarationService {
   }
 
   /**
-   * Get all math function declarations for AI tools
+   * Get all function declarations for AI tools
    */
   getFunctionDeclarations() {
     return this.functionDeclarations;
