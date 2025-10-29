@@ -23,22 +23,6 @@ export class ConversationService {
       conversation = await prisma.conversation.create({
         data: {
           userId,
-          messages: {
-            create: [
-              {
-                role: 'user',
-                content: JSON.stringify({ parts: [{ text: 'Hello' }] }),
-              },
-              {
-                role: 'model',
-                content: JSON.stringify({
-                  parts: [{
-                    text: `Great to meet you. Today is ${new Date().toDateString()}. What would you like to know?`
-                  }]
-                }),
-              },
-            ],
-          },
         },
         include: {
           messages: {
@@ -95,26 +79,6 @@ export class ConversationService {
     if (conversation) {
       await prisma.message.deleteMany({
         where: { conversationId: conversation.id },
-      });
-
-      // Reinitialize with greeting
-      await prisma.message.createMany({
-        data: [
-          {
-            conversationId: conversation.id,
-            role: 'user',
-            content: JSON.stringify({ parts: [{ text: 'Hello' }] }),
-          },
-          {
-            conversationId: conversation.id,
-            role: 'model',
-            content: JSON.stringify({
-              parts: [{
-                text: `Great to meet you. Today is ${new Date().toDateString()}. What would you like to know?`
-              }]
-            }),
-          },
-        ],
       });
     }
   }

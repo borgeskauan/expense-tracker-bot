@@ -37,7 +37,12 @@ export class DependencyService {
       const functionDeclarationService = new FunctionDeclarationService(expenseService);
 
       // Create services with configuration from the config module
-      const geminiService = new GeminiService(config.geminiApiKey, functionDeclarationService);
+      const geminiService = new GeminiService(
+        config.geminiApiKey,
+        config.geminiModel,
+        config.systemInstruction,
+        functionDeclarationService
+      );
       const aiMessageService = new AIMessageService(geminiService, functionDeclarationService);
 
       // Register services
@@ -47,6 +52,7 @@ export class DependencyService {
 
       this.initialized = true;
       console.log('DependencyService initialized successfully');
+      console.log(`Using model: ${config.geminiModel}`);
     } catch (error) {
       console.error('Failed to initialize DependencyService:', error);
       throw error;

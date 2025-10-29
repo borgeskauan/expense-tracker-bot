@@ -5,10 +5,18 @@ import { FunctionDeclarationService } from './functionDeclarationService';
 export class GeminiService implements IAIService {
   private ai: GoogleGenAI;
   private config: GenerateContentConfig;
+  private model: string;
 
-  constructor(apiKey: string, functionDeclarationService: FunctionDeclarationService) {
+  constructor(
+    apiKey: string, 
+    model: string,
+    systemInstruction: string,
+    functionDeclarationService: FunctionDeclarationService
+  ) {
     this.ai = new GoogleGenAI({ apiKey });
+    this.model = model;
     this.config = {
+      systemInstruction: systemInstruction,
       tools: [
         {
           functionDeclarations: functionDeclarationService.getFunctionDeclarations(),
@@ -24,7 +32,7 @@ export class GeminiService implements IAIService {
 
   async generateContent(contents: ContentListUnion): Promise<GenerateContentResponse> {
     const response = await this.ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: this.model,
       contents: contents,
       config: this.config
     });
