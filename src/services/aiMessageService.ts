@@ -14,6 +14,7 @@ export class AIMessageService implements IAIMessageService {
 
   async handleFunctionCalling(message: string, conversationHistory: Content[] = []): Promise<FunctionCallResult> {
     let iterations = 0;
+    const originalHistoryLength = conversationHistory.length;
     const currentContents = [...conversationHistory];
     const functionCallsHistory: FunctionCallHistory[] = [];
 
@@ -28,7 +29,7 @@ export class AIMessageService implements IAIMessageService {
 
       this.addModelResponse(currentContents, finalResponse);
 
-      return this.buildSuccessResult(finalResponse, functionCallsHistory, iterations, currentContents);
+      return this.buildSuccessResult(finalResponse, functionCallsHistory, iterations, currentContents, originalHistoryLength);
     } catch (error) {
       console.error('Error in function calling:', error);
       throw error;
@@ -128,14 +129,18 @@ export class AIMessageService implements IAIMessageService {
     finalResponse: any,
     functionCallsHistory: FunctionCallHistory[],
     iterations: number,
-    conversationHistory: Content[]
+    conversationHistory: Content[],
+    originalHistoryLength: number
   ): FunctionCallResult {
+    // Extract only the new entries added during this interaction
+    const newConversationEntries = conversationHistory.slice(originalHistoryLength);
+    
     return {
       response: finalResponse.text || 'No response text',
       functionUsed: functionCallsHistory.length > 0,
       functionCalls: functionCallsHistory,
       iterations: iterations,
-      conversationHistory: conversationHistory
+      newConversationEntries: newConversationEntries
     };
   }
 }
