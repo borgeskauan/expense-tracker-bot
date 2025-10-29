@@ -19,7 +19,6 @@ const PORT = config.port;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📱 WhatsApp webhook endpoint: http://localhost:${PORT}/whatsapp`);
-  console.log(`💬 Chat endpoint: http://localhost:${PORT}/chat`);
   console.log(`🏥 Health check: http://localhost:${PORT}/health`);
 });
 

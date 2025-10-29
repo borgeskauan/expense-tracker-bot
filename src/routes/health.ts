@@ -8,8 +8,7 @@ export function createHealthRoutes() {
   router.get('/', (req, res) => {
     const response: HealthResponse = {
       status: 'OK',
-      timestamp: new Date().toISOString(),
-      features: ['chat', 'function_calling', 'math_operations', 'multi_step_reasoning']
+      timestamp: new Date().toISOString()
     };
     
     res.json(response);

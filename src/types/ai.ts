@@ -14,7 +14,6 @@ export interface FunctionCallResult {
 export interface HealthResponse {
   status: string;
   timestamp: string;
-  features: string[];
 }
 
 export interface Content {
