@@ -120,11 +120,11 @@ export class ConversationService {
   }
 
   /**
-   * Update conversation with new messages
+   * Add messages to conversation
    * @param userId - WhatsApp JID
    * @param newMessages - Array of new messages to add
    */
-  async updateConversation(userId: string, newMessages: Content[]) {
+  async addMessagesToConversation(userId: string, newMessages: Content[]) {
     const conversation = await this.getOrCreateConversation(userId);
 
     for (const message of newMessages) {

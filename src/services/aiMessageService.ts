@@ -28,7 +28,7 @@ export class AIMessageService implements IAIMessageService {
 
       this.addModelResponse(currentContents, finalResponse);
 
-      return this.buildSuccessResult(finalResponse, functionCallsHistory, iterations);
+      return this.buildSuccessResult(finalResponse, functionCallsHistory, iterations, currentContents);
     } catch (error) {
       console.error('Error in function calling:', error);
       throw error;
@@ -127,13 +127,15 @@ export class AIMessageService implements IAIMessageService {
   private buildSuccessResult(
     finalResponse: any,
     functionCallsHistory: FunctionCallHistory[],
-    iterations: number
+    iterations: number,
+    conversationHistory: Content[]
   ): FunctionCallResult {
     return {
       response: finalResponse.text || 'No response text',
       functionUsed: functionCallsHistory.length > 0,
       functionCalls: functionCallsHistory,
-      iterations: iterations
+      iterations: iterations,
+      conversationHistory: conversationHistory
     };
   }
 }

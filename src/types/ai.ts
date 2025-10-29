@@ -9,6 +9,7 @@ export interface FunctionCallResult {
   functionUsed: boolean;
   functionCalls: FunctionCallHistory[];
   iterations: number;
+  conversationHistory: Content[]; // Complete history including user message, function calls/responses, and model responses
 }
 
 export interface HealthResponse {
