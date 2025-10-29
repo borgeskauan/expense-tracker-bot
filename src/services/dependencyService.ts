@@ -1,5 +1,5 @@
 import { GeminiService } from './geminiService';
-import { FunctionService } from './functionService';
+import { AIMessageService } from './aiMessageService';
 import { config } from '../config';
 import { FunctionDeclarationService } from './functionDeclarationService';
 import { ExpenseService } from './expenseService';
@@ -38,11 +38,11 @@ export class DependencyService {
 
       // Create services with configuration from the config module
       const geminiService = new GeminiService(config.geminiApiKey, functionDeclarationService);
-      const functionService = new FunctionService(geminiService, functionDeclarationService);
+      const aiMessageService = new AIMessageService(geminiService, functionDeclarationService);
 
       // Register services
       this.services.set('GeminiService', geminiService);
-      this.services.set('FunctionService', functionService);
+      this.services.set('AIMessageService', aiMessageService);
       this.services.set('functionDeclarationService', functionDeclarationService);
 
       this.initialized = true;
@@ -54,8 +54,8 @@ export class DependencyService {
   }
 
   // Convenience getters for commonly used services
-  get functionService(): FunctionService {
-    return this.getService<FunctionService>('FunctionService');
+  get aiMessageService(): AIMessageService {
+    return this.getService<AIMessageService>('AIMessageService');
   }
 
   // Clear all services (useful for testing)

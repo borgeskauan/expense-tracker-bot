@@ -41,8 +41,6 @@ export interface GenerateContentResponse {
   text?: string;
 }
 
-export interface IFunctionService {
-  handleFunctionCalling(message: string): Promise<FunctionCallResult>;
-  getConversation(): Content[];
-  clearConversation(): void;
+export interface IAIMessageService {
+  handleFunctionCalling(message: string, conversationHistory?: Content[]): Promise<FunctionCallResult>;
 }

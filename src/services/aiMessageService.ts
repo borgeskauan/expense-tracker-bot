@@ -1,22 +1,20 @@
-import { Content, FunctionCallHistory, FunctionCallResult, IAIService, IFunctionService } from "../types/ai";
+import { Content, FunctionCallHistory, FunctionCallResult, IAIService, IAIMessageService } from "../types/ai";
 import { FunctionDeclarationService } from "./functionDeclarationService";
 
 
-export class FunctionService implements IFunctionService {
+export class AIMessageService implements IAIMessageService {
   private readonly aiService: IAIService;
   private readonly functionDeclarationService: FunctionDeclarationService;
-  private contents: Content[];
-  private readonly MAX_ITERATIONS = 100;
+  private readonly MAX_ITERATIONS = 50;
 
   constructor(aiService: IAIService, functionDeclarationService: FunctionDeclarationService) {
     this.aiService = aiService;
     this.functionDeclarationService = functionDeclarationService;
-    this.contents = this.getInitialConversation();
   }
 
-  async handleFunctionCalling(message: string): Promise<FunctionCallResult> {
+  async handleFunctionCalling(message: string, conversationHistory: Content[] = []): Promise<FunctionCallResult> {
     let iterations = 0;
-    let currentContents = [...this.contents];
+    const currentContents = [...conversationHistory];
     const functionCallsHistory: FunctionCallHistory[] = [];
 
     try {
@@ -28,36 +26,13 @@ export class FunctionService implements IFunctionService {
         iterations
       );
 
-      this.updateConversation(currentContents, finalResponse);
+      this.addModelResponse(currentContents, finalResponse);
 
       return this.buildSuccessResult(finalResponse, functionCallsHistory, iterations);
     } catch (error) {
       console.error('Error in function calling:', error);
       throw error;
     }
-  }
-
-  getConversation(): Content[] {
-    return this.contents;
-  }
-
-  clearConversation(): void {
-    this.contents = this.getInitialConversation();
-  }
-
-  private getInitialConversation(): Content[] {
-    return [
-      {
-        role: "user",
-        parts: [{ text: "Hello" }],
-      },
-      {
-        role: "model",
-        parts: [{
-          text: `Great to meet you. Today is ${new Date().toDateString()} What would you like to know?`
-        }]
-      },
-    ];
   }
 
   private async processFunctionCalls(
@@ -147,13 +122,6 @@ export class FunctionService implements IFunctionService {
         parts: functionResponses.map(fr => ({ functionResponse: fr }))
       });
     }
-  }
-
-  private updateConversation(contents: Content[], finalResponse: any): void {
-    if (finalResponse.candidates?.[0]?.content) {
-      contents.push(finalResponse.candidates[0].content);
-    }
-    this.contents = contents;
   }
 
   private buildSuccessResult(

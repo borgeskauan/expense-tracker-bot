@@ -12,7 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use('/', createRoutes(dependencyService.functionService));
+app.use('/', createRoutes(dependencyService.aiMessageService));
 
 // Start server
 const PORT = config.port;

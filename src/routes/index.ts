@@ -1,13 +1,13 @@
 import { Router } from 'express';
-import { FunctionService } from '../services/functionService';
+import { AIMessageService } from '../services/aiMessageService';
 import { createHealthRoutes } from './health';
 import { createWhatsAppRoutes } from './whatsapp';
 
-export function createRoutes(functionService: FunctionService) {
+export function createRoutes(aiMessageService: AIMessageService) {
   const router = Router();
 
   router.use('/health', createHealthRoutes());
-  router.use('/whatsapp', createWhatsAppRoutes(functionService));
+  router.use('/whatsapp', createWhatsAppRoutes(aiMessageService));
 
   return router;
 }
