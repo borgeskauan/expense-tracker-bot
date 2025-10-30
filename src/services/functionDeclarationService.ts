@@ -3,6 +3,15 @@ import { Expense } from "../types/models";
 import { ExpenseService } from "./expenseService";
 
 // Function declarations
+const getCurrentDateDeclaration = {
+  name: "getCurrentDate",
+  parameters: {
+    type: Type.OBJECT,
+    description: "Get the current date and time information. Use this when you need to confirm today's date or calculate relative dates like 'yesterday' or 'last week'.",
+    properties: {},
+  },
+};
+
 const expenseDeclaration = {
   name: "addExpense",
   parameters: {
@@ -15,7 +24,7 @@ const expenseDeclaration = {
         properties: {
           date: {
             type: Type.STRING,
-            description: "The date of the expense in ISO format (YYYY-MM-DD)",
+            description: "The date of the expense in ISO format (YYYY-MM-DD). For relative dates like 'today', 'yesterday', 'last Monday', calculate the actual date. You can call getCurrentDate() if you need to confirm today's date.",
           },
           amount: {
             type: Type.NUMBER,
@@ -23,7 +32,8 @@ const expenseDeclaration = {
           },
           category: {
             type: Type.STRING,
-            description: "The category of the expense (e.g., food, transportation, entertainment)",
+            description:
+              "The category of the expense (e.g., food, transportation, entertainment)",
           },
           description: {
             type: Type.STRING,
@@ -34,20 +44,41 @@ const expenseDeclaration = {
       },
     },
     required: ["expenseData"],
-  }
+  },
 };
 
 export class FunctionDeclarationService {
   private readonly expenseService: ExpenseService;
 
   private readonly functionMapping = new Map<string, Function>([
+    // Date/Time functions
+    [
+      "getCurrentDate",
+      () => {
+        const now = new Date();
+        return {
+          date: now.toISOString().split('T')[0], // YYYY-MM-DD
+          dayOfWeek: now.toLocaleDateString('en-US', { weekday: 'long' }),
+          fullDate: now.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          }),
+          timestamp: now.toISOString()
+        };
+      }
+    ],
     // Expense functions (async)
-    ["addExpense", async (params: { expenseData: Expense }) => await this.expenseService.addExpense(params.expenseData)],
+    [
+      "addExpense",
+      async (params: { expenseData: Expense }) => {
+        console.log("Executing addExpense with params:", params);
+        return await this.expenseService.addExpense(params.expenseData);
+      }
+    ],
   ]);
 
-  private readonly functionDeclarations = [
-    expenseDeclaration
-  ];
+  private readonly functionDeclarations = [getCurrentDateDeclaration, expenseDeclaration];
 
   constructor(expenseService: ExpenseService) {
     this.expenseService = expenseService;
