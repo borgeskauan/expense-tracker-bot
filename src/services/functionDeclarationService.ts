@@ -1,6 +1,7 @@
 import { Type } from "@google/genai";
 import { Expense } from "../types/models";
 import { ExpenseService } from "./expenseService";
+import { DEFAULT_CATEGORIES, getCategoryDescription } from "../config/categories";
 
 // Function declarations
 const getCurrentDateDeclaration = {
@@ -16,7 +17,7 @@ const expenseDeclaration = {
   name: "addExpense",
   parameters: {
     type: Type.OBJECT,
-    description: "Add a new expense record for a user.",
+    description: "Add a new expense record for a user. This function returns a structured result with success status, a formatted message, and the expense details including the category that was selected. Use the returned information to confirm to the user what was added.",
     properties: {
       expenseData: {
         type: Type.OBJECT,
@@ -32,8 +33,8 @@ const expenseDeclaration = {
           },
           category: {
             type: Type.STRING,
-            description:
-              "The category of the expense (e.g., food, transportation, entertainment)",
+            description: `The category of the expense. ${getCategoryDescription()} If user mentions an unclear category or doesn't mention it at all, choose the closest match from the list.`,
+            enum: [...DEFAULT_CATEGORIES],
           },
           description: {
             type: Type.STRING,

@@ -3,8 +3,12 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 function getSystemInstruction(): string {
-  return process.env.SYSTEM_INSTRUCTION || 
-    'You are a helpful expense tracking assistant. Help users track their expenses by calling the appropriate functions. Be concise and friendly.'; 
+  const baseInstruction = process.env.SYSTEM_INSTRUCTION;
+  if (!baseInstruction || baseInstruction.trim() === '') {
+    throw new Error('SYSTEM_INSTRUCTION environment variable is required');
+  }
+
+  return baseInstruction;
 }
 
 export const config = {
