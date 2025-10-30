@@ -50,24 +50,6 @@ export class ConversationService {
   }
 
   /**
-   * Add a message to the conversation
-   * @param userId - WhatsApp JID
-   * @param role - 'user' or 'model'
-   * @param content - Message content
-   */
-  async addMessage(userId: string, role: 'user' | 'model', content: any) {
-    const conversation = await this.getOrCreateConversation(userId);
-
-    await prisma.message.create({
-      data: {
-        conversationId: conversation.id,
-        role,
-        content: JSON.stringify(content),
-      },
-    });
-  }
-
-  /**
    * Clear conversation history for a user
    * @param userId - WhatsApp JID
    */

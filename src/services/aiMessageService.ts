@@ -12,7 +12,7 @@ export class AIMessageService implements IAIMessageService {
     this.functionDeclarationService = functionDeclarationService;
   }
 
-  async handleFunctionCalling(message: string, conversationHistory: Content[] = []): Promise<FunctionCallResult> {
+  async handleMessage(message: string, conversationHistory: Content[] = []): Promise<FunctionCallResult> {
     let iterations = 0;
     const originalHistoryLength = conversationHistory.length;
     const currentContents = [...conversationHistory];

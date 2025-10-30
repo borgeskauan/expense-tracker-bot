@@ -43,7 +43,7 @@ export class WhatsAppController {
       const conversationHistory = await conversationService.getConversationHistory(userId);
 
       // Process the message with AI (passing the conversation history)
-      const result = await this.aiMessageService.handleFunctionCalling(userMessage, conversationHistory);
+      const result = await this.aiMessageService.handleMessage(userMessage, conversationHistory);
 
       // Save the new conversation entries (user message, function calls/responses, and model response)
       await conversationService.addMessagesToConversation(userId, result.newConversationEntries);

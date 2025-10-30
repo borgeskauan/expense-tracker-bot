@@ -43,5 +43,5 @@ export interface GenerateContentResponse {
 }
 
 export interface IAIMessageService {
-  handleFunctionCalling(message: string, conversationHistory?: Content[]): Promise<FunctionCallResult>;
+  handleMessage(message: string, conversationHistory?: Content[]): Promise<FunctionCallResult>;
 }
