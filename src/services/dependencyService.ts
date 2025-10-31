@@ -3,6 +3,7 @@ import { AIMessageService } from './aiMessageService';
 import { config } from '../config';
 import { FunctionDeclarationService } from './functionDeclarationService';
 import { ExpenseService } from './expenseService';
+import { RecurringExpenseService } from './recurringExpenseService';
 
 export class DependencyService {
   private static instance: DependencyService;
@@ -33,8 +34,12 @@ export class DependencyService {
       }
 
       const expenseService = new ExpenseService();
+      const recurringExpenseService = new RecurringExpenseService();
 
-      const functionDeclarationService = new FunctionDeclarationService(expenseService);
+      const functionDeclarationService = new FunctionDeclarationService(
+        expenseService,
+        recurringExpenseService
+      );
 
       // Create services with configuration from the config module
       const geminiService = new GeminiService(
