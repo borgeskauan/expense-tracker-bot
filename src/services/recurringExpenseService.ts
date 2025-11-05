@@ -1,6 +1,8 @@
 import { PrismaClient } from '../generated/prisma';
 import { RecurringExpenseInput, RecurringExpenseResult } from '../types/models';
-import { findClosestCategory, isValidCategory } from '../config/categories';
+import { CategoryNormalizer } from './common/CategoryNormalizer';
+import { PrismaClientManager } from './common/PrismaClientManager';
+import { UserContextProvider } from './common/UserContextProvider';
 import { 
   isValidFrequency, 
   isValidDayOfWeek, 
@@ -12,9 +14,13 @@ import {
 
 export class RecurringExpenseService {
   private prisma: PrismaClient;
+  private categoryNormalizer: CategoryNormalizer;
+  private userContext: UserContextProvider;
 
-  constructor() {
-    this.prisma = new PrismaClient();
+  constructor(userContext?: UserContextProvider) {
+    this.prisma = PrismaClientManager.getClient();
+    this.categoryNormalizer = new CategoryNormalizer();
+    this.userContext = userContext || new UserContextProvider();
   }
 
   /**
@@ -22,23 +28,16 @@ export class RecurringExpenseService {
    */
   async createRecurringExpense(data: RecurringExpenseInput): Promise<RecurringExpenseResult> {
     try {
-      data.userId = '1'; // TODO: Move this out of here.
+      data.userId = this.userContext.getUserId();
 
       // Validate amount
       if (data.amount <= 0) {
         throw new Error('Amount must be positive');
       }
 
-      // Validate and normalize category
-      let categoryWasNormalized = false;
-      const originalCategory = data.category;
-      
-      if (!isValidCategory(data.category)) {
-        const closestCategory = findClosestCategory(data.category);
-        console.log(`Category "${data.category}" not found. Using closest match: "${closestCategory}"`);
-        data.category = closestCategory;
-        categoryWasNormalized = true;
-      }
+      // Validate and normalize category using composition
+      const normalizationResult = this.categoryNormalizer.normalize(data.category);
+      data.category = normalizationResult.category;
 
       // Apply defaults for startDate
       const startDate = data.startDate || new Date();
@@ -87,8 +86,8 @@ export class RecurringExpenseService {
 
       let message = `Recurring expense created: $${recurringExpense.amount} for ${recurringExpense.category}`;
       
-      if (categoryWasNormalized) {
-        message += ` (categorized from "${originalCategory}")`;
+      if (normalizationResult.wasNormalized) {
+        message += ` (categorized from "${normalizationResult.originalCategory}")`;
       }
       
       if (recurringExpense.description) {
@@ -181,6 +180,6 @@ export class RecurringExpenseService {
    * Disconnect Prisma client
    */
   async disconnect(): Promise<void> {
-    await this.prisma.$disconnect();
+    await PrismaClientManager.disconnect();
   }
 }

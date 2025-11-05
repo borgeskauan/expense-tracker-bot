@@ -1,12 +1,18 @@
 import { PrismaClient } from '../generated/prisma';
 import { Expense, ExpenseResult } from '../types/models';
-import { findClosestCategory, isValidCategory } from '../config/categories';
+import { CategoryNormalizer } from './common/CategoryNormalizer';
+import { PrismaClientManager } from './common/PrismaClientManager';
+import { UserContextProvider } from './common/UserContextProvider';
 
 export class ExpenseService {
   private prisma: PrismaClient;
+  private categoryNormalizer: CategoryNormalizer;
+  private userContext: UserContextProvider;
 
-  constructor() {
-    this.prisma = new PrismaClient();
+  constructor(userContext?: UserContextProvider) {
+    this.prisma = PrismaClientManager.getClient();
+    this.categoryNormalizer = new CategoryNormalizer();
+    this.userContext = userContext || new UserContextProvider();
   }
 
   /**
@@ -14,19 +20,12 @@ export class ExpenseService {
    */
   async addExpense(expenseData: Expense): Promise<ExpenseResult> {
     try {
-      expenseData.userId = '1'; // TODO: Move this out of here.
+      expenseData.userId = this.userContext.getUserId();
       expenseData.date = new Date(expenseData.date);
 
-      // Validate and normalize category
-      let categoryWasNormalized = false;
-      const originalCategory = expenseData.category;
-      
-      if (!isValidCategory(expenseData.category)) {
-        const closestCategory = findClosestCategory(expenseData.category);
-        console.log(`Category "${expenseData.category}" not found. Using closest match: "${closestCategory}"`);
-        expenseData.category = closestCategory;
-        categoryWasNormalized = true;
-      }
+      // Validate and normalize category using composition
+      const normalizationResult = this.categoryNormalizer.normalize(expenseData.category);
+      expenseData.category = normalizationResult.category;
 
       const expense = await this.prisma.expense.create({
         data: {
@@ -38,8 +37,8 @@ export class ExpenseService {
       
       // Build success message
       let message = `Expense added successfully: $${expense.amount} in category "${expense.category}"`;
-      if (categoryWasNormalized) {
-        message += ` (categorized from "${originalCategory}")`;
+      if (normalizationResult.wasNormalized) {
+        message += ` (categorized from "${normalizationResult.originalCategory}")`;
       }
       if (expense.description) {
         message += ` - ${expense.description}`;
@@ -68,6 +67,6 @@ export class ExpenseService {
    * Disconnect Prisma client
    */
   async disconnect(): Promise<void> {
-    await this.prisma.$disconnect();
+    await PrismaClientManager.disconnect();
   }
 }
