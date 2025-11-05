@@ -84,11 +84,11 @@ const recurringExpenseDeclaration = {
           },
           dayOfWeek: {
             type: Type.NUMBER,
-            description: "For weekly frequency only: The day of the week (0=Sunday, 1=Monday, 2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday). Required for weekly frequency.",
+            description: "For weekly frequency only: The day of the week (0=Sunday, 1=Monday, 2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday). Required for weekly frequency. Defaults to the day of the week of the startDate if not specified.",
           },
           dayOfMonth: {
             type: Type.NUMBER,
-            description: "For monthly frequency only: The day of the month (1-31). Required for monthly frequency. If the day doesn't exist in a month (e.g., Feb 30), the last valid day of that month will be used.",
+            description: "For monthly frequency only: The day of the month (1-31). Required for monthly frequency. Defaults to the day of the month of the startDate if not specified.",
           },
           startDate: {
             type: Type.STRING,
