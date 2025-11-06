@@ -1,0 +1,183 @@
+import {
+  Frequency,
+  isValidFrequency,
+  isValidDayOfWeek,
+  isValidDayOfMonth,
+  calculateNextDueDate,
+  getFrequencyDescription,
+} from '../../config/frequencies';
+
+/**
+ * Value object representing a recurrence pattern
+ * Encapsulates frequency logic with self-validation
+ * Immutable after creation
+ */
+export class RecurrencePattern {
+  readonly frequency: Frequency;
+  readonly interval: number;
+  readonly dayOfWeek?: number;
+  readonly dayOfMonth?: number;
+
+  private constructor(
+    frequency: Frequency,
+    interval: number,
+    dayOfWeek?: number,
+    dayOfMonth?: number
+  ) {
+    this.frequency = frequency;
+    this.interval = interval;
+    this.dayOfWeek = dayOfWeek;
+    this.dayOfMonth = dayOfMonth;
+  }
+
+  /**
+   * Create a RecurrencePattern with validation and defaults
+   * 
+   * @param frequency - The recurrence frequency
+   * @param startDate - The start date (used for defaulting day fields)
+   * @param interval - The interval (default: 1)
+   * @param dayOfWeek - Day of week for weekly recurrence (0-6)
+   * @param dayOfMonth - Day of month for monthly recurrence (1-31)
+   * @returns New RecurrencePattern instance
+   * @throws Error if validation fails
+   */
+  static create(
+    frequency: string,
+    startDate: Date,
+    interval?: number,
+    dayOfWeek?: number,
+    dayOfMonth?: number
+  ): RecurrencePattern {
+    // Validate frequency
+    if (!isValidFrequency(frequency)) {
+      throw new Error(
+        `Invalid frequency. Must be one of: daily, weekly, monthly, yearly`
+      );
+    }
+
+    // Validate and default interval
+    const validInterval = interval ?? 1;
+    if (validInterval < 1) {
+      throw new Error('Interval must be at least 1');
+    }
+
+    let validDayOfWeek: number | undefined = dayOfWeek;
+    let validDayOfMonth: number | undefined = dayOfMonth;
+
+    // Validate and apply defaults for frequency-specific fields
+    if (frequency === 'weekly') {
+      // Default dayOfWeek to the day of week of startDate if not provided
+      if (validDayOfWeek === undefined) {
+        validDayOfWeek = startDate.getDay(); // 0-6 (Sunday-Saturday)
+        console.log(
+          `dayOfWeek not provided for weekly frequency, defaulting to ${validDayOfWeek} (${startDate.toLocaleDateString('en-US', { weekday: 'long' })})`
+        );
+      }
+      if (!isValidDayOfWeek(validDayOfWeek)) {
+        throw new Error('dayOfWeek must be between 0 (Sunday) and 6 (Saturday)');
+      }
+    }
+
+    if (frequency === 'monthly') {
+      // Default dayOfMonth to the day of month of startDate if not provided
+      if (validDayOfMonth === undefined) {
+        validDayOfMonth = startDate.getDate(); // 1-31
+        console.log(
+          `dayOfMonth not provided for monthly frequency, defaulting to ${validDayOfMonth}`
+        );
+      }
+      if (!isValidDayOfMonth(validDayOfMonth)) {
+        throw new Error('dayOfMonth must be between 1 and 31');
+      }
+    }
+
+    return new RecurrencePattern(
+      frequency as Frequency,
+      validInterval,
+      validDayOfWeek,
+      validDayOfMonth
+    );
+  }
+
+  /**
+   * Calculate the next due date based on this recurrence pattern
+   * 
+   * @param startDate - The start date for calculation
+   * @returns The next due date
+   */
+  calculateNextDueDate(startDate: Date): Date {
+    return calculateNextDueDate(
+      startDate,
+      this.frequency,
+      this.interval,
+      this.dayOfWeek,
+      this.dayOfMonth
+    );
+  }
+
+  /**
+   * Get a human-readable description of this recurrence pattern
+   * 
+   * @returns Description string (e.g., "every 2 weeks on Monday")
+   */
+  getDescription(): string {
+    return getFrequencyDescription(
+      this.frequency,
+      this.interval,
+      this.dayOfWeek,
+      this.dayOfMonth
+    );
+  }
+
+  /**
+   * Check if this pattern requires dayOfWeek
+   */
+  requiresDayOfWeek(): boolean {
+    return this.frequency === 'weekly';
+  }
+
+  /**
+   * Check if this pattern requires dayOfMonth
+   */
+  requiresDayOfMonth(): boolean {
+    return this.frequency === 'monthly';
+  }
+
+  /**
+   * Convert to plain object for database storage
+   */
+  toJSON(): {
+    frequency: string;
+    interval: number;
+    dayOfWeek: number | null;
+    dayOfMonth: number | null;
+  } {
+    return {
+      frequency: this.frequency,
+      interval: this.interval,
+      dayOfWeek: this.dayOfWeek ?? null,
+      dayOfMonth: this.dayOfMonth ?? null,
+    };
+  }
+
+  /**
+   * Create RecurrencePattern from database record
+   */
+  static fromJSON(data: {
+    frequency: string;
+    interval: number;
+    dayOfWeek: number | null;
+    dayOfMonth: number | null;
+  }): RecurrencePattern {
+    if (!isValidFrequency(data.frequency)) {
+      throw new Error(`Invalid frequency in data: ${data.frequency}`);
+    }
+
+    return new RecurrencePattern(
+      data.frequency as Frequency,
+      data.interval,
+      data.dayOfWeek ?? undefined,
+      data.dayOfMonth ?? undefined
+    );
+  }
+}

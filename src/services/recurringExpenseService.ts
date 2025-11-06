@@ -3,24 +3,19 @@ import { RecurringExpenseInput, RecurringExpenseResult } from '../types/models';
 import { CategoryNormalizer } from './common/CategoryNormalizer';
 import { PrismaClientManager } from './common/PrismaClientManager';
 import { UserContextProvider } from './common/UserContextProvider';
-import { 
-  isValidFrequency, 
-  isValidDayOfWeek, 
-  isValidDayOfMonth,
-  calculateNextDueDate,
-  getFrequencyDescription,
-  Frequency
-} from '../config/frequencies';
+import { RecurringExpenseValidator } from './validators/RecurringExpenseValidator';
 
 export class RecurringExpenseService {
   private prisma: PrismaClient;
   private categoryNormalizer: CategoryNormalizer;
   private userContext: UserContextProvider;
+  private validator: RecurringExpenseValidator;
 
   constructor(userContext?: UserContextProvider) {
     this.prisma = PrismaClientManager.getClient();
     this.categoryNormalizer = new CategoryNormalizer();
     this.userContext = userContext || new UserContextProvider();
+    this.validator = new RecurringExpenseValidator();
   }
 
   /**
@@ -30,32 +25,34 @@ export class RecurringExpenseService {
     try {
       data.userId = this.userContext.getUserId();
 
-      // Validate amount
-      if (data.amount <= 0) {
-        throw new Error('Amount must be positive');
-      }
-
-      // Validate and normalize category using composition
+      // Validate and normalize category
       const normalizationResult = this.categoryNormalizer.normalize(data.category);
       data.category = normalizationResult.category;
 
-      // Apply defaults for startDate
-      const startDate = data.startDate || new Date();
-      if (!data.startDate) {
-        console.log('startDate not provided, defaulting to today');
+      // Normalize and validate start date
+      const startDate = this.validator.normalizeStartDate(data.startDate);
+
+      // Create and validate recurrence pattern (domain object)
+      const validationResult = this.validator.validate(
+        data.amount,
+        data.frequency,
+        startDate,
+        data.interval,
+        data.dayOfWeek,
+        data.dayOfMonth
+      );
+
+      if (!validationResult.isValid || !validationResult.recurrencePattern) {
+        throw new Error(validationResult.errors.join('; '));
       }
 
-      // Validate and apply defaults for frequency-related fields
-      const frequencyData = this.validateFrequency(data, startDate);
+      const recurrencePattern = validationResult.recurrencePattern;
 
-      // Calculate next due date
-      const nextDue = calculateNextDueDate(
-        startDate,
-        frequencyData.frequency,
-        frequencyData.interval,
-        frequencyData.dayOfWeek,
-        frequencyData.dayOfMonth
-      );
+      // Calculate next due date using domain object
+      const nextDue = recurrencePattern.calculateNextDueDate(startDate);
+
+      // Convert pattern to JSON for database
+      const patternData = recurrencePattern.toJSON();
 
       // Create database record
       const recurringExpense = await this.prisma.recurringExpense.create({
@@ -64,10 +61,10 @@ export class RecurringExpenseService {
           amount: data.amount,
           category: data.category,
           description: data.description || null,
-          frequency: frequencyData.frequency,
-          interval: frequencyData.interval,
-          dayOfWeek: frequencyData.dayOfWeek ?? null,
-          dayOfMonth: frequencyData.dayOfMonth ?? null,
+          frequency: patternData.frequency,
+          interval: patternData.interval,
+          dayOfWeek: patternData.dayOfWeek,
+          dayOfMonth: patternData.dayOfMonth,
           startDate: startDate,
           nextDue: nextDue,
           isActive: true,
@@ -76,13 +73,8 @@ export class RecurringExpenseService {
 
       console.log(`Recurring expense created: $${recurringExpense.amount} for ${recurringExpense.category} ${data.frequency}`);
 
-      // Build success message
-      const frequencyDesc = getFrequencyDescription(
-        frequencyData.frequency,
-        frequencyData.interval,
-        frequencyData.dayOfWeek,
-        frequencyData.dayOfMonth
-      );
+      // Build success message using domain object
+      const frequencyDesc = recurrencePattern.getDescription();
 
       let message = `Recurring expense created: $${recurringExpense.amount} for ${recurringExpense.category}`;
       
@@ -117,63 +109,6 @@ export class RecurringExpenseService {
       console.error('Error creating recurring expense:', error);
       throw error instanceof Error ? error : new Error('Failed to create recurring expense');
     }
-  }
-
-  /**
-   * Validate frequency and apply defaults for frequency-related fields
-   * Returns a pure object with validated values without mutating the input
-   */
-  private validateFrequency(
-    data: RecurringExpenseInput, 
-    startDate: Date
-  ): {
-    frequency: Frequency;
-    interval: number;
-    dayOfWeek?: number;
-    dayOfMonth?: number;
-  } {
-    if (!isValidFrequency(data.frequency)) {
-      throw new Error(`Invalid frequency. Must be one of: daily, weekly, monthly, yearly`);
-    }
-
-    // Validate interval
-    const interval = data.interval || 1;
-    if (interval < 1) {
-      throw new Error('Interval must be at least 1');
-    }
-
-    let dayOfWeek: number | undefined = data.dayOfWeek;
-    let dayOfMonth: number | undefined = data.dayOfMonth;
-
-    // Validate frequency-specific fields
-    if (data.frequency === 'weekly') {
-      // Default dayOfWeek to the day of week of startDate if not provided
-      if (dayOfWeek === undefined) {
-        dayOfWeek = startDate.getDay(); // 0-6 (Sunday-Saturday)
-        console.log(`dayOfWeek not provided for weekly frequency, defaulting to ${dayOfWeek} (${startDate.toLocaleDateString('en-US', { weekday: 'long' })})`);
-      }
-      if (!isValidDayOfWeek(dayOfWeek)) {
-        throw new Error('dayOfWeek must be between 0 (Sunday) and 6 (Saturday)');
-      }
-    }
-
-    if (data.frequency === 'monthly') {
-      // Default dayOfMonth to the day of month of startDate if not provided
-      if (dayOfMonth === undefined) {
-        dayOfMonth = startDate.getDate(); // 1-31
-        console.log(`dayOfMonth not provided for monthly frequency, defaulting to ${dayOfMonth}`);
-      }
-      if (!isValidDayOfMonth(dayOfMonth)) {
-        throw new Error('dayOfMonth must be between 1 and 31');
-      }
-    }
-
-    return {
-      frequency: data.frequency as Frequency,
-      interval,
-      dayOfWeek,
-      dayOfMonth,
-    };
   }
 
   /**

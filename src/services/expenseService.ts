@@ -3,16 +3,19 @@ import { Expense, ExpenseResult } from '../types/models';
 import { CategoryNormalizer } from './common/CategoryNormalizer';
 import { PrismaClientManager } from './common/PrismaClientManager';
 import { UserContextProvider } from './common/UserContextProvider';
+import { ExpenseValidator } from './validators/ExpenseValidator';
 
 export class ExpenseService {
   private prisma: PrismaClient;
   private categoryNormalizer: CategoryNormalizer;
   private userContext: UserContextProvider;
+  private validator: ExpenseValidator;
 
   constructor(userContext?: UserContextProvider) {
     this.prisma = PrismaClientManager.getClient();
     this.categoryNormalizer = new CategoryNormalizer();
     this.userContext = userContext || new UserContextProvider();
+    this.validator = new ExpenseValidator();
   }
 
   /**
@@ -21,7 +24,15 @@ export class ExpenseService {
   async addExpense(expenseData: Expense): Promise<ExpenseResult> {
     try {
       expenseData.userId = this.userContext.getUserId();
-      expenseData.date = new Date(expenseData.date);
+      
+      // Normalize and validate date
+      expenseData.date = this.validator.normalizeDate(expenseData.date);
+
+      // Validate amount and date
+      const validationResult = this.validator.validate(expenseData.amount, expenseData.date);
+      if (!validationResult.isValid) {
+        throw new Error(validationResult.errors.join('; '));
+      }
 
       // Validate and normalize category using composition
       const normalizationResult = this.categoryNormalizer.normalize(expenseData.category);
@@ -59,7 +70,7 @@ export class ExpenseService {
       };
     } catch (error) {
       console.error('Error adding expense:', error);
-      throw new Error('Failed to add expense');
+      throw error instanceof Error ? error : new Error('Failed to add expense');
     }
   }
 
