@@ -1,7 +1,8 @@
 # Refactoring Summary: Composition over Inheritance
 
-> **Note**: This is Part 1 of the refactoring. See also:
+> **Note**: This is Part 1 of the refactoring series. See also:
 > - [Part 2 & 3: Validators and Domain Objects](./REFACTORING_SUMMARY_2_AND_3.md)
+> - [Part 4: Repository Pattern](./REFACTORING_SUMMARY_4.md)
 
 ## Overview
 Successfully refactored `ExpenseService` and `RecurringExpenseService` to use **composition** instead of inheritance, eliminating code duplication and improving maintainability.

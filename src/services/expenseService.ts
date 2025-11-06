@@ -1,18 +1,17 @@
-import { PrismaClient } from '../generated/prisma';
 import { Expense, ExpenseResult } from '../types/models';
 import { CategoryNormalizer } from './common/CategoryNormalizer';
-import { PrismaClientManager } from './common/PrismaClientManager';
 import { UserContextProvider } from './common/UserContextProvider';
 import { ExpenseValidator } from './validators/ExpenseValidator';
+import { ExpenseRepository } from './repositories/ExpenseRepository';
 
 export class ExpenseService {
-  private prisma: PrismaClient;
+  private repository: ExpenseRepository;
   private categoryNormalizer: CategoryNormalizer;
   private userContext: UserContextProvider;
   private validator: ExpenseValidator;
 
   constructor(userContext?: UserContextProvider) {
-    this.prisma = PrismaClientManager.getClient();
+    this.repository = new ExpenseRepository();
     this.categoryNormalizer = new CategoryNormalizer();
     this.userContext = userContext || new UserContextProvider();
     this.validator = new ExpenseValidator();
@@ -38,10 +37,13 @@ export class ExpenseService {
       const normalizationResult = this.categoryNormalizer.normalize(expenseData.category);
       expenseData.category = normalizationResult.category;
 
-      const expense = await this.prisma.expense.create({
-        data: {
-          ...expenseData
-        },
+      // Create expense using repository
+      const expense = await this.repository.create({
+        userId: expenseData.userId,
+        date: expenseData.date,
+        amount: expenseData.amount,
+        category: expenseData.category,
+        description: expenseData.description,
       });
       
       console.log(`Expense added: $${expense.amount} for ${expense.category} on ${expense.date}`);
@@ -72,12 +74,5 @@ export class ExpenseService {
       console.error('Error adding expense:', error);
       throw error instanceof Error ? error : new Error('Failed to add expense');
     }
-  }
-
-  /**
-   * Disconnect Prisma client
-   */
-  async disconnect(): Promise<void> {
-    await PrismaClientManager.disconnect();
   }
 }
