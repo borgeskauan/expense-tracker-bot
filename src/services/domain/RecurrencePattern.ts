@@ -92,7 +92,7 @@ export class RecurrencePattern {
     }
 
     return new RecurrencePattern(
-      frequency as Frequency,
+      frequency,
       validInterval,
       validDayOfWeek,
       validDayOfMonth
