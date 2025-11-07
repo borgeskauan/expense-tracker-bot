@@ -5,7 +5,7 @@ import {
   isValidDayOfMonth,
   calculateNextDueDate,
   getFrequencyDescription,
-} from '../../config/frequencies';
+} from '../config/frequencies';
 
 /**
  * Value object representing a recurrence pattern

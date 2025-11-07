@@ -1,4 +1,4 @@
-import { Expense as PrismaExpense, RecurringExpense as PrismaRecurringExpense } from '../../generated/prisma';
+import { Expense as PrismaExpense, RecurringExpense as PrismaRecurringExpense } from '../generated/prisma';
 import { CategoryNormalizationResult } from './CategoryNormalizer';
 import { RecurrencePattern } from '../domain/RecurrencePattern';
 

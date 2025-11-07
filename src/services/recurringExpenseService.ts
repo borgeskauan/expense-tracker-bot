@@ -1,11 +1,11 @@
 import { RecurringExpenseInput, RecurringExpenseResult, RecurringExpenseData } from '../types/models';
 import { success } from '../types/ServiceResult';
-import { CategoryNormalizer } from './common/CategoryNormalizer';
-import { UserContextProvider } from './common/UserContextProvider';
-import { RecurringExpenseValidator } from './validators/RecurringExpenseValidator';
-import { RecurringExpenseRepository } from './repositories/RecurringExpenseRepository';
-import { MessageBuilder } from './common/MessageBuilder';
-import { ErrorMapper } from './common/ErrorMapper';
+import { CategoryNormalizer } from '../lib/CategoryNormalizer';
+import { UserContextProvider } from '../lib/UserContextProvider';
+import { RecurringExpenseValidator } from '../validators/RecurringExpenseValidator';
+import { RecurringExpenseRepository } from '../repositories/RecurringExpenseRepository';
+import { MessageBuilder } from '../lib/MessageBuilder';
+import { ErrorMapper } from '../lib/ErrorMapper';
 
 export class RecurringExpenseService {
   private repository: RecurringExpenseRepository;

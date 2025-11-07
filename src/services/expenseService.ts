@@ -1,11 +1,11 @@
 import { Expense, ExpenseResult, ExpenseData } from '../types/models';
 import { success } from '../types/ServiceResult';
-import { CategoryNormalizer } from './common/CategoryNormalizer';
-import { UserContextProvider } from './common/UserContextProvider';
-import { ExpenseValidator } from './validators/ExpenseValidator';
-import { ExpenseRepository } from './repositories/ExpenseRepository';
-import { MessageBuilder } from './common/MessageBuilder';
-import { ErrorMapper } from './common/ErrorMapper';
+import { CategoryNormalizer } from '../lib/CategoryNormalizer';
+import { UserContextProvider } from '../lib/UserContextProvider';
+import { ExpenseValidator } from '../validators/ExpenseValidator';
+import { ExpenseRepository } from '../repositories/ExpenseRepository';
+import { MessageBuilder } from '../lib/MessageBuilder';
+import { ErrorMapper } from '../lib/ErrorMapper';
 
 export class ExpenseService {
   private repository: ExpenseRepository;

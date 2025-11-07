@@ -1,6 +1,6 @@
-import { PrismaClient, RecurringExpense } from '../../generated/prisma';
-import { DatabaseError } from '../../errors';
-import { PrismaClientManager } from '../common/PrismaClientManager';
+import { PrismaClient, RecurringExpense } from '../generated/prisma';
+import { DatabaseError } from '../errors';
+import { PrismaClientManager } from '../lib/PrismaClientManager';
 
 /**
  * Data for creating a new recurring expense

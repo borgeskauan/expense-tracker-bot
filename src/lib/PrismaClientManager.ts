@@ -1,4 +1,4 @@
-import { PrismaClient } from '../../generated/prisma';
+import { PrismaClient } from '../generated/prisma';
 
 /**
  * Manages Prisma client lifecycle to avoid creating multiple instances

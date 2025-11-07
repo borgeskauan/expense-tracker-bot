@@ -1,4 +1,4 @@
-import { findClosestCategory, isValidCategory } from '../../config/categories';
+import { findClosestCategory, isValidCategory } from '../config/categories';
 
 /**
  * Result of category normalization

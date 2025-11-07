@@ -1,9 +1,9 @@
-import { ServiceResult, failure } from '../../types/ServiceResult';
+import { ServiceResult, failure } from '../types/ServiceResult';
 import {
   ApplicationError,
   ValidationError,
   DatabaseError,
-} from '../../errors';
+} from '../errors';
 
 /**
  * Utility class for mapping errors to ServiceResult
