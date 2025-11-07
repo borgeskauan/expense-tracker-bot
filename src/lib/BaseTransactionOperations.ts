@@ -4,12 +4,13 @@ import { UserContextProvider } from './UserContextProvider';
 import { MessageBuilder } from './MessageBuilder';
 import { PrismaClientManager } from './PrismaClientManager';
 import { failure, ServiceResult } from '../types/ServiceResult';
-import { ExpenseValidator } from '../validators/ExpenseValidator';
+import { TransactionValidator } from '../validators/TransactionValidator';
+import { TransactionType } from '../config/transactionTypes';
 
 /**
- * Result of basic expense data validation
+ * Result of basic transaction data validation
  */
-export interface BasicExpenseValidationResult {
+export interface BasicTransactionValidationResult {
   isValid: boolean;
   amount: number;
   normalizedCategory: string;
@@ -19,40 +20,42 @@ export interface BasicExpenseValidationResult {
 }
 
 /**
- * Base utility class providing shared operations for expense services
+ * Base utility class providing shared operations for transaction services
  * Follows composition pattern - services compose with this utility
  */
-export class BaseExpenseOperations {
+export class BaseTransactionOperations {
   protected prisma: PrismaClient;
   protected categoryNormalizer: CategoryNormalizer;
   protected userContext: UserContextProvider;
   protected messageBuilder: MessageBuilder;
-  protected expenseValidator: ExpenseValidator;
+  protected transactionValidator: TransactionValidator;
 
   constructor(userContext?: UserContextProvider) {
     this.prisma = PrismaClientManager.getClient();
     this.categoryNormalizer = new CategoryNormalizer();
     this.userContext = userContext || new UserContextProvider();
     this.messageBuilder = new MessageBuilder();
-    this.expenseValidator = new ExpenseValidator();
+    this.transactionValidator = new TransactionValidator();
   }
 
   /**
-   * Validate basic expense data (amount, date, category)
-   * This is the shared validation pipeline for both ExpenseService and RecurringExpenseService
+   * Validate basic transaction data (amount, date, category, type)
+   * This is the shared validation pipeline for both TransactionService and RecurringTransactionService
    * 
-   * @param amount - The expense amount
-   * @param category - The expense category
-   * @param date - The expense date (optional, defaults to today)
+   * @param amount - The transaction amount
+   * @param category - The transaction category
+   * @param type - The transaction type (expense or income)
+   * @param date - The transaction date (optional, defaults to today)
    * @returns Validation result with normalized data and warnings
    */
-  validateBasicExpenseData(
+  validateBasicTransactionData(
     amount: number,
     category: string,
+    type: TransactionType,
     date?: Date | string
-  ): BasicExpenseValidationResult {
-    // Validate amount and normalize date
-    const validationResult = this.expenseValidator.validateWithNormalization(amount, date);
+  ): BasicTransactionValidationResult {
+    // Validate amount, type, and normalize date
+    const validationResult = this.transactionValidator.validateWithNormalization(amount, date, type);
     
     if (!validationResult.isValid) {
       return {
@@ -65,8 +68,8 @@ export class BaseExpenseOperations {
       };
     }
 
-    // Normalize category
-    const normalizationResult = this.categoryNormalizer.normalize(category);
+    // Normalize category based on transaction type
+    const normalizationResult = this.categoryNormalizer.normalize(category, type);
     
     // Build category warnings
     const warnings = this.buildCategoryWarnings(normalizationResult);

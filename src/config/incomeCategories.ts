@@ -1,0 +1,35 @@
+/**
+ * Default income categories
+ * These are the standard categories available for income transactions
+ */
+export const INCOME_CATEGORIES = [
+  'Salary',
+  'Freelance',
+  'Investment Returns',
+  'Business Income',
+  'Rental Income',
+  'Gifts Received',
+  'Refunds',
+  'Bonuses',
+  'Side Hustle',
+  'Other'
+] as const;
+
+/**
+ * Income category type derived from the default income categories
+ */
+export type IncomeCategory = typeof INCOME_CATEGORIES[number];
+
+/**
+ * Check if a category is valid income category
+ */
+export function isValidIncomeCategory(category: string): boolean {
+  return INCOME_CATEGORIES.includes(category as IncomeCategory);
+}
+
+/**
+ * Get income category description for AI context
+ */
+export function getIncomeCategoryDescription(): string {
+  return `Available income categories: ${INCOME_CATEGORIES.join(', ')}. Choose the most appropriate category based on the income source.`;
+}

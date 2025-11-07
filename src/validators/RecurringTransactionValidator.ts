@@ -1,34 +1,30 @@
 import { RecurrencePattern } from '../domain/RecurrencePattern';
-import { ExpenseValidator, ValidationResult } from './ExpenseValidator';
+import { TransactionValidator, ValidationResult } from './TransactionValidator';
+import { TransactionType } from '../config/transactionTypes';
 
 /**
- * Validator for recurring expense data
- * Extends base expense validation with recurrence-specific validation
+ * Validator for recurring transaction data
+ * Extends base transaction validation with recurrence-specific validation
  */
-export class RecurringExpenseValidator {
-  private expenseValidator: ExpenseValidator;
+export class RecurringTransactionValidator {
+  private transactionValidator: TransactionValidator;
 
   constructor() {
-    this.expenseValidator = new ExpenseValidator();
+    this.transactionValidator = new TransactionValidator();
   }
 
   /**
-   * Validate recurring expense amount (delegates to ExpenseValidator)
+   * Validate recurring transaction amount (delegates to TransactionValidator)
    */
   validateAmount(amount: number): ValidationResult {
-    return this.expenseValidator.validateAmount(amount);
+    return this.transactionValidator.validateAmount(amount);
   }
 
   /**
-   * Validate start date
+   * Validate transaction type (delegates to TransactionValidator)
    */
-  validateStartDate(startDate: Date | string | undefined): ValidationResult {
-    if (startDate === undefined) {
-      // startDate is optional, will default to today
-      return { isValid: true, errors: [] };
-    }
-
-    return this.expenseValidator.validateDate(startDate);
+  validateType(type: TransactionType): ValidationResult {
+    return this.transactionValidator.validateType(type);
   }
 
   /**
@@ -59,11 +55,12 @@ export class RecurringExpenseValidator {
   }
 
   /**
-   * Validate all recurring expense fields
+   * Validate all recurring transaction fields
    * 
-   * @param amount - The expense amount
+   * @param amount - The transaction amount
    * @param frequency - The recurrence frequency
    * @param startDate - The start date
+   * @param type - The transaction type
    * @param interval - The interval
    * @param dayOfWeek - Day of week for weekly
    * @param dayOfMonth - Day of month for monthly
@@ -73,6 +70,7 @@ export class RecurringExpenseValidator {
     amount: number,
     frequency: string,
     startDate: Date,
+    type: TransactionType,
     interval?: number,
     dayOfWeek?: number,
     dayOfMonth?: number
@@ -86,6 +84,10 @@ export class RecurringExpenseValidator {
     // Validate amount
     const amountResult = this.validateAmount(amount);
     errors.push(...amountResult.errors);
+
+    // Validate type
+    const typeResult = this.validateType(type);
+    errors.push(...typeResult.errors);
 
     // Validate and create recurrence pattern
     let recurrencePattern: RecurrencePattern | undefined;
@@ -116,6 +118,6 @@ export class RecurringExpenseValidator {
    * @returns Normalized Date object
    */
   normalizeStartDate(startDate?: Date | string): Date {
-    return this.expenseValidator.normalizeDate(startDate);
+    return this.transactionValidator.normalizeDate(startDate);
   }
 }

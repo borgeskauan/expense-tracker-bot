@@ -130,20 +130,6 @@ export class RecurrencePattern {
   }
 
   /**
-   * Check if this pattern requires dayOfWeek
-   */
-  requiresDayOfWeek(): boolean {
-    return this.frequency === 'weekly';
-  }
-
-  /**
-   * Check if this pattern requires dayOfMonth
-   */
-  requiresDayOfMonth(): boolean {
-    return this.frequency === 'monthly';
-  }
-
-  /**
    * Convert to plain object for database storage
    */
   toJSON(): {

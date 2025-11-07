@@ -1,31 +1,34 @@
 import { ServiceResult } from './ServiceResult';
+import { TransactionType } from '../config/transactionTypes';
 
-export interface Expense {
+export interface Transaction {
   userId: string;
   date?: Date | string; // Optional, defaults to today if not specified
   amount: number;
   category: string;
   description: string | null;
+  type: TransactionType;
 }
 
 /**
- * Data structure for expense returned in service results
+ * Data structure for transaction returned in service results
  */
-export interface ExpenseData {
+export interface TransactionData {
   id: number;
   amount: number;
   category: string;
   description: string | null;
   date: string; // ISO format for consistency
+  type: TransactionType;
 }
 
 /**
- * Result type for expense operations
+ * Result type for transaction operations
  * Uses generic ServiceResult for consistency
  */
-export type ExpenseResult = ServiceResult<ExpenseData>;
+export type TransactionResult = ServiceResult<TransactionData>;
 
-export interface RecurringExpenseInput {
+export interface RecurringTransactionInput {
   userId: string;
   amount: number;
   category: string;
@@ -35,12 +38,13 @@ export interface RecurringExpenseInput {
   dayOfWeek?: number; // 0-6, for weekly
   dayOfMonth?: number; // 1-31, for monthly
   startDate: Date;
+  type: TransactionType;
 }
 
 /**
- * Data structure for recurring expense returned in service results
+ * Data structure for recurring transaction returned in service results
  */
-export interface RecurringExpenseData {
+export interface RecurringTransactionData {
   id: number;
   amount: number;
   category: string;
@@ -51,10 +55,11 @@ export interface RecurringExpenseData {
   dayOfMonth: number | null;
   nextDue: string; // ISO date
   startDate: string; // ISO date
+  type: TransactionType;
 }
 
 /**
- * Result type for recurring expense operations
+ * Result type for recurring transaction operations
  * Uses generic ServiceResult for consistency
  */
-export type RecurringExpenseResult = ServiceResult<RecurringExpenseData>;
+export type RecurringTransactionResult = ServiceResult<RecurringTransactionData>;

@@ -2,8 +2,8 @@ import { GeminiService } from './ai/geminiService';
 import { AIMessageService } from './ai/aiMessageService';
 import { config } from '../config';
 import { FunctionDeclarationService } from './ai/functionDeclarationService';
-import { ExpenseService } from './business/expenseService';
-import { RecurringExpenseService } from './business/recurringExpenseService';
+import { TransactionService } from './business/transactionService';
+import { RecurringTransactionService } from './business/recurringTransactionService';
 
 export class DependencyService {
   private static instance: DependencyService;
@@ -33,12 +33,12 @@ export class DependencyService {
         throw new Error('GEMINI_API_KEY environment variable is required');
       }
 
-      const expenseService = new ExpenseService();
-      const recurringExpenseService = new RecurringExpenseService();
+      const transactionService = new TransactionService();
+      const recurringTransactionService = new RecurringTransactionService();
 
       const functionDeclarationService = new FunctionDeclarationService(
-        expenseService,
-        recurringExpenseService
+        transactionService,
+        recurringTransactionService
       );
 
       // Create services with configuration from the config module
@@ -67,12 +67,6 @@ export class DependencyService {
   // Convenience getters for commonly used services
   get aiMessageService(): AIMessageService {
     return this.getService<AIMessageService>('AIMessageService');
-  }
-
-  // Clear all services (useful for testing)
-  clear(): void {
-    this.services.clear();
-    this.initialized = false;
   }
 
   private getService<T>(serviceName: string): T {

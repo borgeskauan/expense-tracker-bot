@@ -1,6 +1,7 @@
-import { Expense as PrismaExpense, RecurringExpense as PrismaRecurringExpense } from '../generated/prisma';
+import { Transaction as PrismaTransaction, RecurringTransaction as PrismaRecurringTransaction } from '../generated/prisma';
 import { CategoryNormalizationResult } from './CategoryNormalizer';
 import { RecurrencePattern } from '../domain/RecurrencePattern';
+import { TransactionType } from '../config/transactionTypes';
 
 /**
  * Utility class for building user-facing messages
@@ -15,119 +16,77 @@ export class MessageBuilder {
   }
 
   /**
-   * Build message for expense creation
+   * Get the transaction type label for messages
+   */
+  private getTransactionTypeLabel(type: TransactionType): string {
+    return type === TransactionType.EXPENSE ? 'Expense' : 'Income';
+  }
+
+  /**
+   * Get the transaction verb for messages
+   */
+  private getTransactionVerb(type: TransactionType): string {
+    return type === TransactionType.EXPENSE ? 'added' : 'recorded';
+  }
+
+  /**
+   * Build message for transaction creation
    * 
-   * @param expense - The created expense
+   * @param transaction - The created transaction
    * @param normalizationResult - Category normalization result
    * @returns Formatted success message
    */
-  buildExpenseCreatedMessage(
-    expense: PrismaExpense,
+  buildTransactionCreatedMessage(
+    transaction: PrismaTransaction,
     normalizationResult: CategoryNormalizationResult
   ): string {
-    let message = `Expense added successfully: $${expense.amount} in category "${expense.category}"`;
+    const label = this.getTransactionTypeLabel(transaction.type as TransactionType);
+    const verb = this.getTransactionVerb(transaction.type as TransactionType);
+
+    let message = `${label} ${verb} successfully: $${transaction.amount} in category "${transaction.category}"`;
 
     if (normalizationResult.wasNormalized) {
       message += ` (categorized from "${normalizationResult.originalCategory}")`;
     }
 
-    if (expense.description) {
-      message += ` - ${expense.description}`;
+    if (transaction.description) {
+      message += ` - ${transaction.description}`;
     }
 
-    message += ` on ${this.formatDate(expense.date)}`;
+    message += ` on ${this.formatDate(transaction.date)}`;
 
     return message;
   }
 
   /**
-   * Build message for recurring expense creation
+   * Build message for recurring transaction creation
    * 
-   * @param recurringExpense - The created recurring expense
+   * @param recurringTransaction - The created recurring transaction
    * @param recurrencePattern - The recurrence pattern domain object
    * @param normalizationResult - Category normalization result
    * @returns Formatted success message
    */
-  buildRecurringExpenseCreatedMessage(
-    recurringExpense: PrismaRecurringExpense,
+  buildRecurringTransactionCreatedMessage(
+    recurringTransaction: PrismaRecurringTransaction,
     recurrencePattern: RecurrencePattern,
     normalizationResult: CategoryNormalizationResult
   ): string {
+    const label = this.getTransactionTypeLabel(recurringTransaction.type as TransactionType);
     const frequencyDesc = recurrencePattern.getDescription();
 
-    let message = `Recurring expense created: $${recurringExpense.amount} for ${recurringExpense.category}`;
+    let message = `Recurring ${label.toLowerCase()} created: $${recurringTransaction.amount} for ${recurringTransaction.category}`;
 
     if (normalizationResult.wasNormalized) {
       message += ` (categorized from "${normalizationResult.originalCategory}")`;
     }
 
-    if (recurringExpense.description) {
-      message += ` - ${recurringExpense.description}`;
+    if (recurringTransaction.description) {
+      message += ` - ${recurringTransaction.description}`;
     }
 
-    message += ` ${frequencyDesc}, starting ${this.formatDate(recurringExpense.startDate)}`;
+    message += ` ${frequencyDesc}, starting ${this.formatDate(recurringTransaction.startDate)}`;
 
     return message;
-  }
-
-  /**
-   * Build message for expense update
-   * 
-   * @param expense - The updated expense
-   * @returns Formatted success message
-   */
-  buildExpenseUpdatedMessage(expense: PrismaExpense): string {
-    return `Expense #${expense.id} updated: $${expense.amount} in "${expense.category}" on ${this.formatDate(expense.date)}`;
-  }
-
-  /**
-   * Build message for recurring expense update
-   * 
-   * @param recurringExpense - The updated recurring expense
-   * @returns Formatted success message
-   */
-  buildRecurringExpenseUpdatedMessage(recurringExpense: PrismaRecurringExpense): string {
-    return `Recurring expense #${recurringExpense.id} updated: $${recurringExpense.amount} for "${recurringExpense.category}"`;
-  }
-
-  /**
-   * Build message for expense deletion
-   * 
-   * @param expenseId - The ID of deleted expense
-   * @returns Formatted success message
-   */
-  buildExpenseDeletedMessage(expenseId: number): string {
-    return `Expense #${expenseId} deleted successfully`;
-  }
-
-  /**
-   * Build message for recurring expense deletion
-   * 
-   * @param recurringExpenseId - The ID of deleted recurring expense
-   * @returns Formatted success message
-   */
-  buildRecurringExpenseDeletedMessage(recurringExpenseId: number): string {
-    return `Recurring expense #${recurringExpenseId} deleted successfully`;
-  }
-
-  /**
-   * Build message for recurring expense activation
-   * 
-   * @param recurringExpense - The activated recurring expense
-   * @returns Formatted success message
-   */
-  buildRecurringExpenseActivatedMessage(recurringExpense: PrismaRecurringExpense): string {
-    return `Recurring expense #${recurringExpense.id} activated: $${recurringExpense.amount} for "${recurringExpense.category}"`;
-  }
-
-  /**
-   * Build message for recurring expense deactivation
-   * 
-   * @param recurringExpense - The deactivated recurring expense
-   * @returns Formatted success message
-   */
-  buildRecurringExpenseDeactivatedMessage(recurringExpense: PrismaRecurringExpense): string {
-    return `Recurring expense #${recurringExpense.id} deactivated: $${recurringExpense.amount} for "${recurringExpense.category}"`;
   }
 
   /**
@@ -143,27 +102,5 @@ export class MessageBuilder {
       return `Category "${normalizationResult.originalCategory}" was normalized to "${normalizationResult.category}"`;
     }
     return undefined;
-  }
-
-  /**
-   * Build summary message for multiple expenses
-   * 
-   * @param count - Number of expenses
-   * @param total - Total amount
-   * @returns Formatted summary message
-   */
-  buildExpenseSummaryMessage(count: number, total: number): string {
-    return `Found ${count} expense${count !== 1 ? 's' : ''} totaling $${total.toFixed(2)}`;
-  }
-
-  /**
-   * Build summary message for multiple recurring expenses
-   * 
-   * @param count - Number of recurring expenses
-   * @param monthlyTotal - Monthly equivalent total
-   * @returns Formatted summary message
-   */
-  buildRecurringExpenseSummaryMessage(count: number, monthlyTotal: number): string {
-    return `Found ${count} recurring expense${count !== 1 ? 's' : ''} with monthly total of $${monthlyTotal.toFixed(2)}`;
   }
 }

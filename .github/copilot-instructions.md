@@ -1,7 +1,7 @@
 # Expense Tracker Bot - AI Agent Instructions
 
 ## Project Overview
-WhatsApp-based expense tracking bot using Google Gemini AI for natural language processing. Users send expense messages via WhatsApp; Gemini extracts structured data and calls functions to store expenses in SQLite.
+WhatsApp-based financial tracking bot using Google Gemini AI for natural language processing. Users send transaction messages via WhatsApp; Gemini extracts structured data and calls functions to store transactions (expenses or income) in SQLite.
 
 ## Architecture Pattern: AI Function Calling Pipeline
 
@@ -27,18 +27,18 @@ WhatsApp-based expense tracking bot using Google Gemini AI for natural language 
 
 ### Composition Over Inheritance
 Services use **shared utility classes** (not base classes):
-- `CategoryNormalizer`: Validates categories against `DEFAULT_CATEGORIES` from `src/config/categories.ts`
+- `CategoryNormalizer`: Validates categories against `EXPENSE_CATEGORIES` or `INCOME_CATEGORIES` based on transaction type
 - `PrismaClientManager`: Singleton Prisma client (avoid multiple connections)
 - `UserContextProvider`: Injects `userId` into operations
-- `MessageBuilder`: Formats success messages with category warnings
+- `MessageBuilder`: Formats success messages with transaction type-specific wording and category warnings
 
-**Example**: `ExpenseService` composes these utilities, not inheritance hierarchy.
+**Example**: `TransactionService` composes these utilities, not inheritance hierarchy.
 
 ### ServiceResult Pattern
 All service methods return `ServiceResult<T>` from `src/types/ServiceResult.ts`:
 ```typescript
 // Success case
-return success(data, "Expense added: $50 for Food", ["Category normalized from 'food' to 'Food & Dining'"]);
+return success(data, "Expense added: $50 for Food & Dining", ["Category normalized from 'food' to 'Food & Dining'"]);
 
 // Failure case with validation errors
 return failure("Validation failed", "VALIDATION_ERROR", "Amount must be positive", ["Amount must be positive"]);
@@ -52,10 +52,10 @@ return failure("Validation failed", "VALIDATION_ERROR", "Amount must be positive
 
 ### Domain Objects for Complex Logic
 - `RecurrencePattern` (`src/services/domain/RecurrencePattern.ts`): Encapsulates frequency calculations (nextDue, validation)
-- Validators separate from business logic: `ExpenseValidator`, `RecurringExpenseValidator` in `src/services/validators/`
+- Validators separate from business logic: `TransactionValidator`, `RecurringTransactionValidator` in `src/validators/`
 
 ### Repository Pattern
-- `ExpenseRepository`, `RecurringExpenseRepository` in `src/services/repositories/`
+- `TransactionRepository`, `RecurringTransactionRepository` in `src/services/repositories/` (if implemented)
 - Services call repositories for DB access (never direct Prisma in services)
 - Repositories use `PrismaClientManager.getClient()` for shared client
 
@@ -86,12 +86,27 @@ Import as: `import { PrismaClient } from '../generated/prisma'`
 
 Defined in `src/services/functionDeclarationService.ts`:
 - `getCurrentDate()`: Returns current date for relative date calculations
-- `addExpense(expenseData)`: Adds single expense
-- `createRecurringExpense(recurringExpenseData)`: Creates recurring expense with frequency logic
+- `addExpense(expenseData)`: Adds single expense transaction (type='expense')
+- `addIncome(incomeData)`: Adds single income transaction (type='income')
+- `createRecurringExpense(recurringExpenseData)`: Creates recurring expense (type='expense')
+- `createRecurringIncome(recurringIncomeData)`: Creates recurring income (type='income')
 
-**Categories**: Enum in function params sourced from `src/config/categories.ts`. When adding categories:
-1. Update `DEFAULT_CATEGORIES` array
-2. AI automatically receives updated enum via `getCategoryDescription()`
+**CRITICAL - Separate Functions Pattern**: 
+- Expenses and income are SEPARATE AI functions with different category enums
+- `addExpense` and `createRecurringExpense` use `EXPENSE_CATEGORIES` enum
+- `addIncome` and `createRecurringIncome` use `INCOME_CATEGORIES` enum
+- Functions internally set the `type` field ('expense' or 'income') before calling TransactionService
+- AI chooses function based on user intent - no type parameter needed in function calls
+
+**Transaction Types**: Enum in `src/config/transactionTypes.ts`:
+- `TRANSACTION_TYPES = ['expense', 'income']`
+- Stored as string in database, validated via enum
+
+**Expense Categories**: `src/config/categories.ts` - `EXPENSE_CATEGORIES` array:
+- Food & Dining, Transportation, Shopping, Entertainment, Bills & Utilities, Healthcare, Personal Care, Travel, Education, Groceries, Housing, Insurance, Savings & Investments, Gifts & Donations, Other
+
+**Income Categories**: `src/config/incomeCategories.ts` - `INCOME_CATEGORIES` array:
+- Salary, Freelance, Investment Returns, Business Income, Rental Income, Gifts Received, Refunds, Bonuses, Side Hustle, Other
 
 **Frequencies**: `daily`, `weekly`, `monthly`, `yearly` from `src/config/frequencies.ts`
 
@@ -106,7 +121,7 @@ Requires `.env`:
 DATABASE_URL="file:./dev.db"
 GEMINI_API_KEY="your-key"
 GEMINI_MODEL="gemini-2.0-flash"
-SYSTEM_INSTRUCTION="You are an expense tracking assistant..."
+SYSTEM_INSTRUCTION="You are a financial tracking assistant. Help users track expenses and income..."
 WHATSAPP_API_URL="http://localhost:3000"
 ```
 
@@ -133,9 +148,10 @@ Response includes function call trace: `functionUsed`, `functionCalls`, `iterati
 
 ### New Function Declaration
 1. Add declaration object in `FunctionDeclarationService` (follow existing pattern with `Type.OBJECT`)
-2. Implement executor in `executeFunction()` switch statement
-3. Create service method (returns `ServiceResult<T>`)
-4. If new entity: Add Prisma model → migrate → create repository/service
+2. Choose appropriate category enum (EXPENSE_CATEGORIES or INCOME_CATEGORIES)
+3. Implement executor in `executeFunction()` switch statement - set type field before calling service
+4. Create service method (returns `ServiceResult<T>`)
+5. If new entity: Add Prisma model → migrate → create repository/service
 
 ### New Service
 1. Create in `src/services/` using composition pattern (inject shared utilities)
@@ -146,7 +162,9 @@ Response includes function call trace: `functionUsed`, `functionCalls`, `iterati
 ## Important Quirks
 
 - **Conversation History**: AIMessageService receives full history but only returns NEW entries (`newConversationEntries`) to avoid duplicates in DB
-- **Category Normalization**: AI can send any string, CategoryNormalizer fuzzy matches to valid category, returns warnings
+- **Category Normalization**: AI can send any string, CategoryNormalizer fuzzy matches to valid category based on transaction type, returns warnings
+- **Type-Aware Categories**: CategoryNormalizer accepts `type` parameter to validate against correct category set
+- **Separate AI Functions**: 4 distinct functions (addExpense, addIncome, createRecurringExpense, createRecurringIncome) - each sets type internally
 - **Prisma Import Path**: Always `from '../generated/prisma'` (relative to current file depth)
 - **Singleton Pattern**: DependencyService, PrismaClientManager, conversationService, whatsappService are all singletons (avoid duplicate instances)
-- **Date Handling**: ExpenseValidator normalizes Date objects to ISO strings; Gemini receives format instructions in function declarations
+- **Date Handling**: TransactionValidator normalizes Date objects to ISO strings; Gemini receives format instructions in function declarations

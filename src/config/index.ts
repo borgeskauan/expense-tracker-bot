@@ -13,7 +13,7 @@ function getSystemInstruction(): string {
 
 export const config = {
   port: process.env.PORT || 3001,
-  geminiApiKey: process.env.GEMINI_API_KEY || '',
+  geminiApiKey: process.env.GEMINI_API_KEY,
   geminiModel: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
   systemInstruction: getSystemInstruction(),
   whatsapp: {

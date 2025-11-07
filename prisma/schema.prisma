@@ -14,22 +14,26 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Expense {
+model Transaction {
   id          Int      @id @default(autoincrement())
   userId      String
   date        DateTime
   amount      Float
   category    String
   description String?
+  type        String   @default("expense") // "expense" or "income"
   createdAt   DateTime @default(now())
+  
+  @@index([userId])
 }
 
-model RecurringExpense {
+model RecurringTransaction {
   id          Int      @id @default(autoincrement())
   userId      String
   amount      Float
   category    String
   description String?
+  type        String   @default("expense") // "expense" or "income"
   
   // Recurrence pattern
   frequency   String   // "daily", "weekly", "monthly", "yearly"

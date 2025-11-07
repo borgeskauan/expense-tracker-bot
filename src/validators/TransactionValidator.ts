@@ -1,5 +1,7 @@
+import { TransactionType, isValidTransactionType, TRANSACTION_TYPES } from '../config/transactionTypes';
+
 /**
- * Validation result for expenses
+ * Validation result for transactions
  */
 export interface ValidationResult {
   isValid: boolean;
@@ -7,14 +9,14 @@ export interface ValidationResult {
 }
 
 /**
- * Validator for basic expense data
+ * Validator for basic transaction data
  * Separates validation logic from business logic
  */
-export class ExpenseValidator {
+export class TransactionValidator {
   /**
-   * Validate expense amount
+   * Validate transaction amount
    * 
-   * @param amount - The expense amount to validate
+   * @param amount - The transaction amount to validate
    * @returns Validation result
    */
   validateAmount(amount: number): ValidationResult {
@@ -33,9 +35,9 @@ export class ExpenseValidator {
   }
 
   /**
-   * Validate expense date
+   * Validate transaction date
    * 
-   * @param date - The expense date to validate
+   * @param date - The transaction date to validate
    * @returns Validation result
    */
   validateDate(date: Date | string): ValidationResult {
@@ -54,19 +56,21 @@ export class ExpenseValidator {
   }
 
   /**
-   * Validate all expense fields
+   * Validate transaction type
    * 
-   * @param amount - The expense amount
-   * @param date - The expense date
-   * @returns Combined validation result
+   * @param type - The transaction type to validate
+   * @returns Validation result
    */
-  validate(amount: number, date: Date | string): ValidationResult {
-    const amountResult = this.validateAmount(amount);
-    const dateResult = this.validateDate(date);
+  validateType(type: string): ValidationResult {
+    const errors: string[] = [];
+
+    if (!isValidTransactionType(type)) {
+      errors.push(`Type must be one of: ${TRANSACTION_TYPES.join(', ')}`);
+    }
 
     return {
-      isValid: amountResult.isValid && dateResult.isValid,
-      errors: [...amountResult.errors, ...dateResult.errors],
+      isValid: errors.length === 0,
+      errors,
     };
   }
 
@@ -91,17 +95,20 @@ export class ExpenseValidator {
   }
 
   /**
-   * Validate all expense fields with date normalization
+   * Validate all transaction fields with date normalization
    * 
-   * @param amount - The expense amount
-   * @param date - The expense date (can be Date, string, or undefined - defaults to today)
+   * @param amount - The transaction amount
+   * @param date - The transaction date (can be Date, string, or undefined - defaults to today)
+   * @param type - The transaction type
    * @returns Combined validation result with normalized date
    */
   validateWithNormalization(
     amount: number, 
-    date?: Date | string
+    date: Date | string | undefined,
+    type: TransactionType
   ): ValidationResult & { normalizedDate: Date } {
     const amountResult = this.validateAmount(amount);
+    const typeResult = this.validateType(type);
     
     // Normalize date (defaults to today if undefined)
     const normalizedDate = this.normalizeDate(date);
@@ -110,8 +117,8 @@ export class ExpenseValidator {
     const dateResult = this.validateDate(normalizedDate);
 
     return {
-      isValid: amountResult.isValid && dateResult.isValid,
-      errors: [...amountResult.errors, ...dateResult.errors],
+      isValid: amountResult.isValid && dateResult.isValid && typeResult.isValid,
+      errors: [...amountResult.errors, ...dateResult.errors, ...typeResult.errors],
       normalizedDate,
     };
   }

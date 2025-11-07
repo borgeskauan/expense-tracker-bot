@@ -1,39 +1,41 @@
-import { RecurringExpenseInput, RecurringExpenseResult } from '../../types/models';
+import { RecurringTransactionInput, RecurringTransactionResult } from '../../types/models';
 import { success, failure } from '../../types/ServiceResult';
 import { UserContextProvider } from '../../lib/UserContextProvider';
-import { RecurringExpenseValidator } from '../../validators/RecurringExpenseValidator';
-import { BaseExpenseOperations } from '../../lib/BaseExpenseOperations';
+import { RecurringTransactionValidator } from '../../validators/RecurringTransactionValidator';
+import { BaseTransactionOperations } from '../../lib/BaseTransactionOperations';
 import { PrismaClient } from '../../generated/prisma';
 import { MessageBuilder } from '../../lib/MessageBuilder';
 import { PrismaClientManager } from '../../lib/PrismaClientManager';
+import { TransactionType } from '../../config/transactionTypes';
 
-export class RecurringExpenseService {
-  private baseOps: BaseExpenseOperations;
-  private validator: RecurringExpenseValidator;
+export class RecurringTransactionService {
+  private baseOps: BaseTransactionOperations;
+  private validator: RecurringTransactionValidator;
   private prisma: PrismaClient;
   private messageBuilder: MessageBuilder;
 
   constructor(userContext?: UserContextProvider) {
-    this.baseOps = new BaseExpenseOperations(userContext);
-    this.validator = new RecurringExpenseValidator();
+    this.baseOps = new BaseTransactionOperations(userContext);
+    this.validator = new RecurringTransactionValidator();
     this.prisma = PrismaClientManager.getClient();
     this.messageBuilder = new MessageBuilder();
   }
 
   /**
-   * Create a new recurring expense
+   * Create a new recurring transaction
    */
-  async createRecurringExpense(data: RecurringExpenseInput): Promise<RecurringExpenseResult> {
+  async createRecurringTransaction(data: RecurringTransactionInput): Promise<RecurringTransactionResult> {
     // Inject user ID using base operations
     this.baseOps.injectUserId(data);
 
     // Store original category before normalization
     const originalCategory = data.category;
 
-    // Validate basic expense data (amount, startDate, category) using shared pipeline
-    const basicValidation = this.baseOps.validateBasicExpenseData(
+    // Validate basic transaction data (amount, startDate, category, type) using shared pipeline
+    const basicValidation = this.baseOps.validateBasicTransactionData(
       data.amount,
       data.category,
+      data.type,
       data.startDate
     );
 
@@ -55,6 +57,7 @@ export class RecurringExpenseService {
       data.amount,
       data.frequency,
       startDate,
+      data.type,
       data.interval,
       data.dayOfWeek,
       data.dayOfMonth
@@ -79,7 +82,7 @@ export class RecurringExpenseService {
 
     try {
       // Create database record directly with Prisma
-      const recurringExpense = await this.prisma.recurringExpense.create({
+      const recurringTransaction = await this.prisma.recurringTransaction.create({
         data: {
           userId: data.userId,
           amount: data.amount,
@@ -92,14 +95,15 @@ export class RecurringExpenseService {
           startDate: startDate,
           nextDue: nextDue,
           isActive: true,
+          type: data.type,
         },
       });
 
-      console.log(`Recurring expense created: $${recurringExpense.amount} for ${recurringExpense.category} ${data.frequency}`);
+      console.log(`Recurring transaction created: $${recurringTransaction.amount} for ${recurringTransaction.category} ${data.frequency} (${data.type})`);
 
       // Build success message using MessageBuilder
-      const message = this.messageBuilder.buildRecurringExpenseCreatedMessage(
-        recurringExpense,
+      const message = this.messageBuilder.buildRecurringTransactionCreatedMessage(
+        recurringTransaction,
         recurrencePattern,
         {
           category: basicValidation.normalizedCategory,
@@ -111,22 +115,23 @@ export class RecurringExpenseService {
       // Return structured result with warnings from validation
       return success(
         {
-          id: recurringExpense.id,
-          amount: recurringExpense.amount,
-          category: recurringExpense.category,
-          description: recurringExpense.description,
-          frequency: recurringExpense.frequency,
-          interval: recurringExpense.interval,
-          dayOfWeek: recurringExpense.dayOfWeek,
-          dayOfMonth: recurringExpense.dayOfMonth,
-          nextDue: recurringExpense.nextDue.toISOString().split('T')[0],
-          startDate: recurringExpense.startDate.toISOString().split('T')[0]
+          id: recurringTransaction.id,
+          amount: recurringTransaction.amount,
+          category: recurringTransaction.category,
+          description: recurringTransaction.description,
+          frequency: recurringTransaction.frequency,
+          interval: recurringTransaction.interval,
+          dayOfWeek: recurringTransaction.dayOfWeek,
+          dayOfMonth: recurringTransaction.dayOfMonth,
+          nextDue: recurringTransaction.nextDue.toISOString().split('T')[0],
+          startDate: recurringTransaction.startDate.toISOString().split('T')[0],
+          type: recurringTransaction.type as TransactionType
         },
         message,
         basicValidation.warnings.length > 0 ? basicValidation.warnings : undefined
       );
     } catch (error) {
-      return this.baseOps.handleDatabaseError(error, 'creating the recurring expense');
+      return this.baseOps.handleDatabaseError(error, 'creating the recurring transaction');
     }
   }
 }
