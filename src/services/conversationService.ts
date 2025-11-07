@@ -50,22 +50,6 @@ export class ConversationService {
   }
 
   /**
-   * Clear conversation history for a user
-   * @param userId - WhatsApp JID
-   */
-  async clearConversation(userId: string) {
-    const conversation = await prisma.conversation.findFirst({
-      where: { userId },
-    });
-
-    if (conversation) {
-      await prisma.message.deleteMany({
-        where: { conversationId: conversation.id },
-      });
-    }
-  }
-
-  /**
    * Add messages to conversation
    * @param userId - WhatsApp JID
    * @param newMessages - Array of new messages to add

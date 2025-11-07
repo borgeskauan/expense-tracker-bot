@@ -57,44 +57,11 @@ export class WhatsAppController {
       res.json({
         success: true,
         messageId: sendResult.id,
-        to: sendResult.to,
-        processed: {
-          functionUsed: result.functionUsed,
-          functionCalls: result.functionCalls?.length || 0,
-          iterations: result.iterations
-        }
+        to: sendResult.to
       });
 
     } catch (error) {
       console.error('Error processing WhatsApp webhook:', error);
-      res.status(500).json({ 
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
-  }
-
-  /**
-   * Clear conversation history for a user
-   */
-  async clearConversation(req: Request, res: Response): Promise<void> {
-    try {
-      const { userId } = req.params;
-
-      if (!userId) {
-        res.status(400).json({ error: 'Missing userId' });
-        return;
-      }
-
-      await conversationService.clearConversation(userId);
-
-      res.json({
-        success: true,
-        message: 'Conversation cleared'
-      });
-
-    } catch (error) {
-      console.error('Error clearing conversation:', error);
       res.status(500).json({ 
         error: 'Internal server error',
         message: error instanceof Error ? error.message : 'Unknown error'

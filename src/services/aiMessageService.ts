@@ -1,4 +1,4 @@
-import { Content, FunctionCallHistory, FunctionCallResult, IAIService, IAIMessageService } from "../types/ai";
+import { Content, FunctionCallResult, IAIService, IAIMessageService } from "../types/ai";
 import { FunctionDeclarationService } from "./functionDeclarationService";
 
 
@@ -16,20 +16,18 @@ export class AIMessageService implements IAIMessageService {
     let iterations = 0;
     const originalHistoryLength = conversationHistory.length;
     const currentContents = [...conversationHistory];
-    const functionCallsHistory: FunctionCallHistory[] = [];
 
     try {
       this.addUserMessage(currentContents, message);
 
       const finalResponse = await this.processFunctionCalls(
         currentContents,
-        functionCallsHistory,
         iterations
       );
 
       this.addModelResponse(currentContents, finalResponse);
 
-      return this.buildSuccessResult(finalResponse, functionCallsHistory, iterations, currentContents, originalHistoryLength);
+      return this.buildSuccessResult(finalResponse, currentContents, originalHistoryLength);
     } catch (error) {
       console.error('Error in function calling:', error);
       throw error;
@@ -38,7 +36,6 @@ export class AIMessageService implements IAIMessageService {
 
   private async processFunctionCalls(
     contents: Content[],
-    history: FunctionCallHistory[],
     iterations: number
   ): Promise<any> {
     while (iterations < this.MAX_ITERATIONS) {
@@ -55,7 +52,7 @@ export class AIMessageService implements IAIMessageService {
       console.log(`Function call(s) detected in iteration ${iterations}:`, functionCalls);
 
       this.addModelResponse(contents, generateContentResponse);
-      await this.executeFunctionCalls(functionCalls, contents, history);
+      await this.executeFunctionCalls(functionCalls, contents);
 
       console.log(`Completed iteration ${iterations}, function responses sent back to model`);
     }
@@ -65,8 +62,7 @@ export class AIMessageService implements IAIMessageService {
 
   private async executeFunctionCalls(
     functionCalls: any[],
-    contents: Content[],
-    history: FunctionCallHistory[]
+    contents: Content[]
   ): Promise<void> {
     const functionResponses = [];
 
@@ -77,11 +73,6 @@ export class AIMessageService implements IAIMessageService {
       }
 
       const result = await this.executeSingleFunctionCall(functionCall);
-      history.push({
-        name: functionCall.name,
-        parameters: functionCall.args,
-        result: result
-      });
 
       functionResponses.push({
         name: functionCall.name,
@@ -127,8 +118,6 @@ export class AIMessageService implements IAIMessageService {
 
   private buildSuccessResult(
     finalResponse: any,
-    functionCallsHistory: FunctionCallHistory[],
-    iterations: number,
     conversationHistory: Content[],
     originalHistoryLength: number
   ): FunctionCallResult {
@@ -137,9 +126,6 @@ export class AIMessageService implements IAIMessageService {
     
     return {
       response: finalResponse.text || 'No response text',
-      functionUsed: functionCallsHistory.length > 0,
-      functionCalls: functionCallsHistory,
-      iterations: iterations,
       newConversationEntries: newConversationEntries
     };
   }

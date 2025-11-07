@@ -1,14 +1,5 @@
-export interface FunctionCallHistory {
-  name: string;
-  parameters: any;
-  result: number;
-}
-
 export interface FunctionCallResult {
   response: string;
-  functionUsed: boolean;
-  functionCalls: FunctionCallHistory[];
-  iterations: number;
   newConversationEntries: Content[]; // Only the new entries added during this interaction
 }
 
