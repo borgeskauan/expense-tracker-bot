@@ -1,24 +1,22 @@
-import { RecurringExpenseInput, RecurringExpenseResult, RecurringExpenseData } from '../../types/models';
+import { RecurringExpenseInput, RecurringExpenseResult } from '../../types/models';
 import { success, failure } from '../../types/ServiceResult';
-import { CategoryNormalizer } from '../../lib/CategoryNormalizer';
 import { UserContextProvider } from '../../lib/UserContextProvider';
 import { RecurringExpenseValidator } from '../../validators/RecurringExpenseValidator';
-import { PrismaClientManager } from '../../lib/PrismaClientManager';
-import { MessageBuilder } from '../../lib/MessageBuilder';
+import { BaseExpenseOperations } from '../../lib/BaseExpenseOperations';
 import { PrismaClient } from '../../generated/prisma';
+import { MessageBuilder } from '../../lib/MessageBuilder';
+import { PrismaClientManager } from '../../lib/PrismaClientManager';
 
 export class RecurringExpenseService {
-  private prisma: PrismaClient;
-  private categoryNormalizer: CategoryNormalizer;
-  private userContext: UserContextProvider;
+  private baseOps: BaseExpenseOperations;
   private validator: RecurringExpenseValidator;
+  private prisma: PrismaClient;
   private messageBuilder: MessageBuilder;
 
   constructor(userContext?: UserContextProvider) {
-    this.prisma = PrismaClientManager.getClient();
-    this.categoryNormalizer = new CategoryNormalizer();
-    this.userContext = userContext || new UserContextProvider();
+    this.baseOps = new BaseExpenseOperations(userContext);
     this.validator = new RecurringExpenseValidator();
+    this.prisma = PrismaClientManager.getClient();
     this.messageBuilder = new MessageBuilder();
   }
 
@@ -26,17 +24,34 @@ export class RecurringExpenseService {
    * Create a new recurring expense
    */
   async createRecurringExpense(data: RecurringExpenseInput): Promise<RecurringExpenseResult> {
-    data.userId = this.userContext.getUserId();
+    // Inject user ID using base operations
+    this.baseOps.injectUserId(data);
 
-    // Validate and normalize category
-    const normalizationResult = this.categoryNormalizer.normalize(data.category);
-    data.category = normalizationResult.category;
+    // Store original category before normalization
+    const originalCategory = data.category;
 
-    // Normalize start date (defaults to today if not provided)
-    const startDate = this.validator.normalizeStartDate(data.startDate);
+    // Validate basic expense data (amount, startDate, category) using shared pipeline
+    const basicValidation = this.baseOps.validateBasicExpenseData(
+      data.amount,
+      data.category,
+      data.startDate
+    );
 
-    // Create and validate recurrence pattern (domain object)
-    const validationResult = this.validator.validate(
+    if (!basicValidation.isValid) {
+      return failure(
+        'Validation failed',
+        'VALIDATION_ERROR',
+        basicValidation.validationErrors?.join('; '),
+        basicValidation.validationErrors
+      );
+    }
+
+    // Use validated and normalized data
+    data.category = basicValidation.normalizedCategory;
+    const startDate = basicValidation.normalizedDate;
+
+    // Validate recurrence pattern (domain-specific)
+    const recurrenceValidation = this.validator.validate(
       data.amount,
       data.frequency,
       startDate,
@@ -45,16 +60,16 @@ export class RecurringExpenseService {
       data.dayOfMonth
     );
 
-    if (!validationResult.isValid || !validationResult.recurrencePattern) {
+    if (!recurrenceValidation.isValid || !recurrenceValidation.recurrencePattern) {
       return failure(
         'Validation failed',
         'VALIDATION_ERROR',
-        validationResult.errors.join('; '),
-        validationResult.errors
+        recurrenceValidation.errors.join('; '),
+        recurrenceValidation.errors
       );
     }
 
-    const recurrencePattern = validationResult.recurrencePattern;
+    const recurrencePattern = recurrenceValidation.recurrencePattern;
 
     // Calculate next due date using domain object
     const nextDue = recurrencePattern.calculateNextDueDate(startDate);
@@ -86,17 +101,14 @@ export class RecurringExpenseService {
       const message = this.messageBuilder.buildRecurringExpenseCreatedMessage(
         recurringExpense,
         recurrencePattern,
-        normalizationResult
+        {
+          category: basicValidation.normalizedCategory,
+          wasNormalized: basicValidation.warnings.length > 0,
+          originalCategory: basicValidation.warnings.length > 0 ? originalCategory : undefined
+        }
       );
 
-      // Build warnings if category was normalized
-      const warnings: string[] = [];
-      const categoryWarning = this.messageBuilder.buildCategoryNormalizationWarning(normalizationResult);
-      if (categoryWarning) {
-        warnings.push(categoryWarning);
-      }
-
-      // Return structured result using generic ServiceResult
+      // Return structured result with warnings from validation
       return success(
         {
           id: recurringExpense.id,
@@ -111,15 +123,10 @@ export class RecurringExpenseService {
           startDate: recurringExpense.startDate.toISOString().split('T')[0]
         },
         message,
-        warnings.length > 0 ? warnings : undefined
+        basicValidation.warnings.length > 0 ? basicValidation.warnings : undefined
       );
     } catch (error) {
-      console.error('Database error in createRecurringExpense:', error);
-      return failure(
-        'A technical error occurred while creating the recurring expense',
-        'DATABASE_ERROR',
-        error instanceof Error ? error.message : 'Unknown error'
-      );
+      return this.baseOps.handleDatabaseError(error, 'creating the recurring expense');
     }
   }
 }

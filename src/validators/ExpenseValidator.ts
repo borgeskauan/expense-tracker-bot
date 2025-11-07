@@ -1,5 +1,3 @@
-import { ValidationError } from '../errors';
-
 /**
  * Validation result for expenses
  */
@@ -43,13 +41,9 @@ export class ExpenseValidator {
   validateDate(date: Date | string): ValidationResult {
     const errors: string[] = [];
 
-    try {
-      const dateObj = date instanceof Date ? date : new Date(date);
-      
-      if (isNaN(dateObj.getTime())) {
-        errors.push('Date must be a valid date');
-      }
-    } catch (error) {
+    const dateObj = date instanceof Date ? date : new Date(date);
+    
+    if (isNaN(dateObj.getTime())) {
       errors.push('Date must be a valid date');
     }
 
