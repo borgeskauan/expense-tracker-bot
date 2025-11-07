@@ -1,3 +1,5 @@
+import { ServiceResult } from './ServiceResult';
+
 export interface Expense {
   userId: string;
   date: Date;
@@ -6,17 +8,22 @@ export interface Expense {
   description: string | null;
 }
 
-export interface ExpenseResult {
-  success: boolean;
-  message: string;
-  expense: {
-    id: number;
-    amount: number;
-    category: string;
-    description: string | null;
-    date: string; // ISO format for consistency
-  };
+/**
+ * Data structure for expense returned in service results
+ */
+export interface ExpenseData {
+  id: number;
+  amount: number;
+  category: string;
+  description: string | null;
+  date: string; // ISO format for consistency
 }
+
+/**
+ * Result type for expense operations
+ * Uses generic ServiceResult for consistency
+ */
+export type ExpenseResult = ServiceResult<ExpenseData>;
 
 export interface RecurringExpenseInput {
   userId: string;
@@ -30,19 +37,24 @@ export interface RecurringExpenseInput {
   startDate: Date;
 }
 
-export interface RecurringExpenseResult {
-  success: boolean;
-  message: string;
-  recurringExpense: {
-    id: number;
-    amount: number;
-    category: string;
-    description: string | null;
-    frequency: string;
-    interval: number;
-    dayOfWeek: number | null;
-    dayOfMonth: number | null;
-    nextDue: string; // ISO date
-    startDate: string; // ISO date
-  };
+/**
+ * Data structure for recurring expense returned in service results
+ */
+export interface RecurringExpenseData {
+  id: number;
+  amount: number;
+  category: string;
+  description: string | null;
+  frequency: string;
+  interval: number;
+  dayOfWeek: number | null;
+  dayOfMonth: number | null;
+  nextDue: string; // ISO date
+  startDate: string; // ISO date
 }
+
+/**
+ * Result type for recurring expense operations
+ * Uses generic ServiceResult for consistency
+ */
+export type RecurringExpenseResult = ServiceResult<RecurringExpenseData>;

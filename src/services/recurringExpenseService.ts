@@ -1,20 +1,24 @@
 import { RecurringExpenseInput, RecurringExpenseResult } from '../types/models';
+import { success, failure } from '../types/ServiceResult';
 import { CategoryNormalizer } from './common/CategoryNormalizer';
 import { UserContextProvider } from './common/UserContextProvider';
 import { RecurringExpenseValidator } from './validators/RecurringExpenseValidator';
 import { RecurringExpenseRepository } from './repositories/RecurringExpenseRepository';
+import { MessageBuilder } from './common/MessageBuilder';
 
 export class RecurringExpenseService {
   private repository: RecurringExpenseRepository;
   private categoryNormalizer: CategoryNormalizer;
   private userContext: UserContextProvider;
   private validator: RecurringExpenseValidator;
+  private messageBuilder: MessageBuilder;
 
   constructor(userContext?: UserContextProvider) {
     this.repository = new RecurringExpenseRepository();
     this.categoryNormalizer = new CategoryNormalizer();
     this.userContext = userContext || new UserContextProvider();
     this.validator = new RecurringExpenseValidator();
+    this.messageBuilder = new MessageBuilder();
   }
 
   /**
@@ -70,26 +74,23 @@ export class RecurringExpenseService {
 
       console.log(`Recurring expense created: $${recurringExpense.amount} for ${recurringExpense.category} ${data.frequency}`);
 
-      // Build success message using domain object
-      const frequencyDesc = recurrencePattern.getDescription();
+      // Build success message using MessageBuilder
+      const message = this.messageBuilder.buildRecurringExpenseCreatedMessage(
+        recurringExpense,
+        recurrencePattern,
+        normalizationResult
+      );
 
-      let message = `Recurring expense created: $${recurringExpense.amount} for ${recurringExpense.category}`;
-      
-      if (normalizationResult.wasNormalized) {
-        message += ` (categorized from "${normalizationResult.originalCategory}")`;
+      // Build warnings if category was normalized
+      const warnings: string[] = [];
+      const categoryWarning = this.messageBuilder.buildCategoryNormalizationWarning(normalizationResult);
+      if (categoryWarning) {
+        warnings.push(categoryWarning);
       }
-      
-      if (recurringExpense.description) {
-        message += ` - ${recurringExpense.description}`;
-      }
-      
-      message += ` ${frequencyDesc}, starting ${recurringExpense.startDate.toISOString().split('T')[0]}`;
 
-      // Return structured result
-      return {
-        success: true,
-        message: message,
-        recurringExpense: {
+      // Return structured result using generic ServiceResult
+      return success(
+        {
           id: recurringExpense.id,
           amount: recurringExpense.amount,
           category: recurringExpense.category,
@@ -100,11 +101,14 @@ export class RecurringExpenseService {
           dayOfMonth: recurringExpense.dayOfMonth,
           nextDue: recurringExpense.nextDue.toISOString().split('T')[0],
           startDate: recurringExpense.startDate.toISOString().split('T')[0]
-        }
-      };
+        },
+        message,
+        warnings.length > 0 ? warnings : undefined
+      );
     } catch (error) {
       console.error('Error creating recurring expense:', error);
-      throw error instanceof Error ? error : new Error('Failed to create recurring expense');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create recurring expense';
+      return failure(errorMessage, 'RECURRING_EXPENSE_CREATE_ERROR');
     }
   }
 }
