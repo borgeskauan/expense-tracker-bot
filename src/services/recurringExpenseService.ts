@@ -1,10 +1,11 @@
-import { RecurringExpenseInput, RecurringExpenseResult } from '../types/models';
-import { success, failure } from '../types/ServiceResult';
+import { RecurringExpenseInput, RecurringExpenseResult, RecurringExpenseData } from '../types/models';
+import { success } from '../types/ServiceResult';
 import { CategoryNormalizer } from './common/CategoryNormalizer';
 import { UserContextProvider } from './common/UserContextProvider';
 import { RecurringExpenseValidator } from './validators/RecurringExpenseValidator';
 import { RecurringExpenseRepository } from './repositories/RecurringExpenseRepository';
 import { MessageBuilder } from './common/MessageBuilder';
+import { ErrorMapper } from './common/ErrorMapper';
 
 export class RecurringExpenseService {
   private repository: RecurringExpenseRepository;
@@ -107,8 +108,7 @@ export class RecurringExpenseService {
       );
     } catch (error) {
       console.error('Error creating recurring expense:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create recurring expense';
-      return failure(errorMessage, 'RECURRING_EXPENSE_CREATE_ERROR');
+      return ErrorMapper.toServiceResult<RecurringExpenseData>(error);
     }
   }
 }

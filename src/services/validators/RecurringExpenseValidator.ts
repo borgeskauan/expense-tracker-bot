@@ -1,3 +1,4 @@
+import { ValidationError } from '../../errors';
 import { RecurrencePattern } from '../domain/RecurrencePattern';
 import { ExpenseValidator, ValidationResult } from './ExpenseValidator';
 

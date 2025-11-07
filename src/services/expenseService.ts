@@ -1,10 +1,11 @@
-import { Expense, ExpenseResult } from '../types/models';
-import { success, failure } from '../types/ServiceResult';
+import { Expense, ExpenseResult, ExpenseData } from '../types/models';
+import { success } from '../types/ServiceResult';
 import { CategoryNormalizer } from './common/CategoryNormalizer';
 import { UserContextProvider } from './common/UserContextProvider';
 import { ExpenseValidator } from './validators/ExpenseValidator';
 import { ExpenseRepository } from './repositories/ExpenseRepository';
 import { MessageBuilder } from './common/MessageBuilder';
+import { ErrorMapper } from './common/ErrorMapper';
 
 export class ExpenseService {
   private repository: ExpenseRepository;
@@ -79,8 +80,7 @@ export class ExpenseService {
       );
     } catch (error) {
       console.error('Error adding expense:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to add expense';
-      return failure(errorMessage, 'EXPENSE_CREATE_ERROR');
+      return ErrorMapper.toServiceResult<ExpenseData>(error);
     }
   }
 }

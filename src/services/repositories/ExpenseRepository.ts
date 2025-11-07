@@ -1,4 +1,5 @@
 import { PrismaClient, Expense } from '../../generated/prisma';
+import { DatabaseError } from '../../errors';
 import { PrismaClientManager } from '../common/PrismaClientManager';
 
 /**
@@ -40,16 +41,25 @@ export class ExpenseRepository {
    * 
    * @param data - Expense data to create
    * @returns The created expense
+   * @throws DatabaseError if the operation fails
    */
   async create(data: CreateExpenseData): Promise<Expense> {
-    return await this.prisma.expense.create({
-      data: {
-        userId: data.userId,
-        date: data.date,
-        amount: data.amount,
-        category: data.category,
-        description: data.description,
-      },
-    });
+    try {
+      return await this.prisma.expense.create({
+        data: {
+          userId: data.userId,
+          date: data.date,
+          amount: data.amount,
+          category: data.category,
+          description: data.description,
+        },
+      });
+    } catch (error) {
+      throw new DatabaseError(
+        'Failed to create expense',
+        error instanceof Error ? error : undefined,
+        { operation: 'create', entity: 'expense', data }
+      );
+    }
   }
 }

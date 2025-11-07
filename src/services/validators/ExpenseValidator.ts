@@ -1,3 +1,5 @@
+import { ValidationError } from '../../errors';
+
 /**
  * Validation result for expenses
  */
@@ -80,13 +82,16 @@ export class ExpenseValidator {
    * 
    * @param date - The date to normalize
    * @returns Normalized Date object
-   * @throws Error if date is invalid
+   * @throws ValidationError if date is invalid
    */
   normalizeDate(date: Date | string): Date {
     const dateObj = date instanceof Date ? date : new Date(date);
     
     if (isNaN(dateObj.getTime())) {
-      throw new Error('Invalid date provided');
+      throw new ValidationError(
+        'Invalid date provided',
+        ['date: Invalid date provided']
+      );
     }
     
     return dateObj;

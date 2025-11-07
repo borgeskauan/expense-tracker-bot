@@ -1,4 +1,5 @@
 import { PrismaClient, RecurringExpense } from '../../generated/prisma';
+import { DatabaseError } from '../../errors';
 import { PrismaClientManager } from '../common/PrismaClientManager';
 
 /**
@@ -61,10 +62,19 @@ export class RecurringExpenseRepository {
    * 
    * @param data - Recurring expense data to create
    * @returns The created recurring expense
+   * @throws DatabaseError if the operation fails
    */
   async create(data: CreateRecurringExpenseData): Promise<RecurringExpense> {
-    return await this.prisma.recurringExpense.create({
-      data,
-    });
+    try {
+      return await this.prisma.recurringExpense.create({
+        data,
+      });
+    } catch (error) {
+      throw new DatabaseError(
+        'Failed to create recurring expense',
+        error instanceof Error ? error : undefined,
+        { operation: 'create', entity: 'recurringExpense', data }
+      );
+    }
   }
 }
