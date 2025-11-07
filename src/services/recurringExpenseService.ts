@@ -3,19 +3,20 @@ import { success } from '../types/ServiceResult';
 import { CategoryNormalizer } from '../lib/CategoryNormalizer';
 import { UserContextProvider } from '../lib/UserContextProvider';
 import { RecurringExpenseValidator } from '../validators/RecurringExpenseValidator';
-import { RecurringExpenseRepository } from '../repositories/RecurringExpenseRepository';
+import { PrismaClientManager } from '../lib/PrismaClientManager';
 import { MessageBuilder } from '../lib/MessageBuilder';
 import { ErrorMapper } from '../lib/ErrorMapper';
+import { PrismaClient } from '../generated/prisma';
 
 export class RecurringExpenseService {
-  private repository: RecurringExpenseRepository;
+  private prisma: PrismaClient;
   private categoryNormalizer: CategoryNormalizer;
   private userContext: UserContextProvider;
   private validator: RecurringExpenseValidator;
   private messageBuilder: MessageBuilder;
 
   constructor(userContext?: UserContextProvider) {
-    this.repository = new RecurringExpenseRepository();
+    this.prisma = PrismaClientManager.getClient();
     this.categoryNormalizer = new CategoryNormalizer();
     this.userContext = userContext || new UserContextProvider();
     this.validator = new RecurringExpenseValidator();
@@ -58,19 +59,21 @@ export class RecurringExpenseService {
       // Convert pattern to JSON for database
       const patternData = recurrencePattern.toJSON();
 
-      // Create database record using repository
-      const recurringExpense = await this.repository.create({
-        userId: data.userId,
-        amount: data.amount,
-        category: data.category,
-        description: data.description || null,
-        frequency: patternData.frequency,
-        interval: patternData.interval,
-        dayOfWeek: patternData.dayOfWeek,
-        dayOfMonth: patternData.dayOfMonth,
-        startDate: startDate,
-        nextDue: nextDue,
-        isActive: true,
+      // Create database record directly with Prisma
+      const recurringExpense = await this.prisma.recurringExpense.create({
+        data: {
+          userId: data.userId,
+          amount: data.amount,
+          category: data.category,
+          description: data.description || null,
+          frequency: patternData.frequency,
+          interval: patternData.interval,
+          dayOfWeek: patternData.dayOfWeek,
+          dayOfMonth: patternData.dayOfMonth,
+          startDate: startDate,
+          nextDue: nextDue,
+          isActive: true,
+        },
       });
 
       console.log(`Recurring expense created: $${recurringExpense.amount} for ${recurringExpense.category} ${data.frequency}`);

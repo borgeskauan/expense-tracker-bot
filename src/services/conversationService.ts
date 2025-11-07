@@ -1,16 +1,20 @@
 import { PrismaClient } from '../generated/prisma';
 import { Content } from '../types/ai';
-
-const prisma = new PrismaClient();
+import { PrismaClientManager } from '../lib/PrismaClientManager';
 
 export class ConversationService {
+  private prisma: PrismaClient;
+
+  constructor() {
+    this.prisma = PrismaClientManager.getClient();
+  }
   /**
    * Get or create a conversation for a user
    * @param userId - WhatsApp JID
    * @returns Conversation with messages
    */
   async getOrCreateConversation(userId: string) {
-    let conversation = await prisma.conversation.findFirst({
+    let conversation = await this.prisma.conversation.findFirst({
       where: { userId },
       include: {
         messages: {
@@ -20,7 +24,7 @@ export class ConversationService {
     });
 
     if (!conversation) {
-      conversation = await prisma.conversation.create({
+      conversation = await this.prisma.conversation.create({
         data: {
           userId,
         },
@@ -58,7 +62,7 @@ export class ConversationService {
     const conversation = await this.getOrCreateConversation(userId);
 
     for (const message of newMessages) {
-      await prisma.message.create({
+      await this.prisma.message.create({
         data: {
           conversationId: conversation.id,
           role: message.role,

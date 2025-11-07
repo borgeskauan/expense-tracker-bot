@@ -3,19 +3,20 @@ import { success } from '../types/ServiceResult';
 import { CategoryNormalizer } from '../lib/CategoryNormalizer';
 import { UserContextProvider } from '../lib/UserContextProvider';
 import { ExpenseValidator } from '../validators/ExpenseValidator';
-import { ExpenseRepository } from '../repositories/ExpenseRepository';
+import { PrismaClientManager } from '../lib/PrismaClientManager';
 import { MessageBuilder } from '../lib/MessageBuilder';
 import { ErrorMapper } from '../lib/ErrorMapper';
+import { PrismaClient } from '../generated/prisma';
 
 export class ExpenseService {
-  private repository: ExpenseRepository;
+  private prisma: PrismaClient;
   private categoryNormalizer: CategoryNormalizer;
   private userContext: UserContextProvider;
   private validator: ExpenseValidator;
   private messageBuilder: MessageBuilder;
 
   constructor(userContext?: UserContextProvider) {
-    this.repository = new ExpenseRepository();
+    this.prisma = PrismaClientManager.getClient();
     this.categoryNormalizer = new CategoryNormalizer();
     this.userContext = userContext || new UserContextProvider();
     this.validator = new ExpenseValidator();
@@ -42,13 +43,15 @@ export class ExpenseService {
       const normalizationResult = this.categoryNormalizer.normalize(expenseData.category);
       expenseData.category = normalizationResult.category;
 
-      // Create expense using repository
-      const expense = await this.repository.create({
-        userId: expenseData.userId,
-        date: expenseData.date,
-        amount: expenseData.amount,
-        category: expenseData.category,
-        description: expenseData.description,
+      // Create expense directly with Prisma
+      const expense = await this.prisma.expense.create({
+        data: {
+          userId: expenseData.userId,
+          date: expenseData.date,
+          amount: expenseData.amount,
+          category: expenseData.category,
+          description: expenseData.description,
+        }
       });
       
       console.log(`Expense added: $${expense.amount} for ${expense.category} on ${expense.date}`);
