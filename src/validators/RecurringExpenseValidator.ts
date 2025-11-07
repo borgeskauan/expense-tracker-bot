@@ -109,7 +109,7 @@ export class RecurringExpenseValidator {
   }
 
   /**
-   * Normalize and validate start date
+   * Normalize start date
    * Defaults to today if not provided
    * 
    * @param startDate - The start date to normalize

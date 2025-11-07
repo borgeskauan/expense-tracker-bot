@@ -31,6 +31,7 @@ export interface ServiceResult<T> {
   error?: {
     code?: string;
     details?: string;
+    validationErrors?: string[];
   };
 }
 
@@ -61,12 +62,14 @@ export function success<T>(
  * @param message - Error message
  * @param code - Optional error code
  * @param details - Optional error details
+ * @param validationErrors - Optional array of specific validation errors
  * @returns ServiceResult with success=false
  */
 export function failure<T = never>(
   message: string,
   code?: string,
-  details?: string
+  details?: string,
+  validationErrors?: string[]
 ): ServiceResult<T> {
   return {
     success: false,
@@ -74,6 +77,7 @@ export function failure<T = never>(
     error: {
       ...(code && { code }),
       ...(details && { details }),
+      ...(validationErrors && validationErrors.length > 0 && { validationErrors }),
     },
   };
 }

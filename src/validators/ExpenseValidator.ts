@@ -77,28 +77,48 @@ export class ExpenseValidator {
   }
 
   /**
-   * Normalize and validate date
-   * Ensures date is a Date object
+   * Normalize date to Date object
+   * Defaults to today if not provided
    * 
-   * @param date - The date to normalize
-   * @returns Normalized Date object
-   * @throws ValidationError if date is invalid
+   * @param date - The date to normalize (Date, string, or undefined)
+   * @returns Date object (defaults to today if undefined)
    */
   normalizeDate(date?: Date | string): Date {
     if (!date) {
-      console.log('startDate not provided, defaulting to today');
+      console.log('Date not provided, defaulting to today');
       return new Date();
     }
-
-    const dateObj = date instanceof Date ? date : new Date(date);
     
-    if (isNaN(dateObj.getTime())) {
-      throw new ValidationError(
-        'Invalid date provided',
-        ['date: Invalid date provided']
-      );
+    if (date instanceof Date) {
+      return date;
     }
     
-    return dateObj;
+    return new Date(date);
+  }
+
+  /**
+   * Validate all expense fields with date normalization
+   * 
+   * @param amount - The expense amount
+   * @param date - The expense date (can be Date, string, or undefined - defaults to today)
+   * @returns Combined validation result with normalized date
+   */
+  validateWithNormalization(
+    amount: number, 
+    date?: Date | string
+  ): ValidationResult & { normalizedDate: Date } {
+    const amountResult = this.validateAmount(amount);
+    
+    // Normalize date (defaults to today if undefined)
+    const normalizedDate = this.normalizeDate(date);
+    
+    // Validate normalized date
+    const dateResult = this.validateDate(normalizedDate);
+
+    return {
+      isValid: amountResult.isValid && dateResult.isValid,
+      errors: [...amountResult.errors, ...dateResult.errors],
+      normalizedDate,
+    };
   }
 }

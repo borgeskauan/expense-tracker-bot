@@ -19,7 +19,7 @@ const expenseDeclaration = {
   name: "addExpense",
   parameters: {
     type: Type.OBJECT,
-    description: "Add a new expense record for a user. This function returns a structured result with success status, a formatted message, and the expense details including the category that was selected. Use the returned information to confirm to the user what was added.",
+    description: "Add a new expense record for a user. This function returns a structured result with a 'success' field. On success (success=true), it includes a formatted message and expense details. On failure (success=false), it includes validation errors in the 'error' object with 'validationErrors' array. IMPORTANT: Always check the 'success' field and handle both cases. If validation fails, explain the errors to the user in a friendly way and ask for the missing or corrected information.",
     properties: {
       expenseData: {
         type: Type.OBJECT,
@@ -27,7 +27,7 @@ const expenseDeclaration = {
         properties: {
           date: {
             type: Type.STRING,
-            description: "The date of the expense in ISO format (YYYY-MM-DD). For relative dates like 'today', 'yesterday', 'last Monday', calculate the actual date. You can call getCurrentDate() if you need to confirm today's date. If not specified, defaults to today.",
+            description: "The date of the expense in ISO format (YYYY-MM-DD). For relative dates like 'today', 'yesterday', 'last Monday', calculate the actual date. You can call getCurrentDate() if you need to confirm today's date. Defaults to today if not specified.",
           },
           amount: {
             type: Type.NUMBER,
@@ -43,7 +43,7 @@ const expenseDeclaration = {
             description: "Optional description of the expense",
           },
         },
-        required: ["amount", "category"],
+        required: ["date", "amount", "category"],
       },
     },
     required: ["expenseData"],
@@ -54,7 +54,7 @@ const recurringExpenseDeclaration = {
   name: "createRecurringExpense",
   parameters: {
     type: Type.OBJECT,
-    description: "Create a new recurring expense that repeats on a regular schedule (daily, weekly, monthly, or yearly). This function returns a structured result with success status, a formatted message, and the recurring expense details including when the next expense is due.",
+    description: "Create a new recurring expense that repeats on a regular schedule (daily, weekly, monthly, or yearly). This function returns a structured result with a 'success' field. On success (success=true), it includes a formatted message and recurring expense details including when the next expense is due. On failure (success=false), it includes validation errors in the 'error' object with 'validationErrors' array. IMPORTANT: Always check the 'success' field and handle both cases. If validation fails, explain the errors to the user in a friendly way and ask for the missing or corrected information.",
     properties: {
       recurringExpenseData: {
         type: Type.OBJECT,

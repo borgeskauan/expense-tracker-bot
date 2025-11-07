@@ -1,5 +1,5 @@
-import { Expense, ExpenseResult } from '../../types/models';
-import { success } from '../../types/ServiceResult';
+import { Expense, ExpenseResult, ExpenseData } from '../../types/models';
+import { success, failure } from '../../types/ServiceResult';
 import { CategoryNormalizer } from '../../lib/CategoryNormalizer';
 import { UserContextProvider } from '../../lib/UserContextProvider';
 import { ExpenseValidator } from '../../validators/ExpenseValidator';
@@ -27,57 +27,75 @@ export class ExpenseService {
    */
   async addExpense(expenseData: Expense): Promise<ExpenseResult> {
     expenseData.userId = this.userContext.getUserId();
-
-    // Normalize date
-    expenseData.date = this.validator.normalizeDate(expenseData.date);
-
-    // Validate amount and date
-    const validationResult = this.validator.validate(expenseData.amount, expenseData.date);
+    
+    // Validate amount and normalize date (date defaults to today if not provided)
+    const validationResult = this.validator.validateWithNormalization(
+      expenseData.amount, 
+      expenseData.date
+    );
+    
     if (!validationResult.isValid) {
-      throw new Error(validationResult.errors.join('; '));
+      return failure(
+        'Validation failed',
+        'VALIDATION_ERROR',
+        validationResult.errors.join('; '),
+        validationResult.errors
+      );
     }
+
+    // Use normalized date from validation (will be today if not provided)
+    const normalizedDate = validationResult.normalizedDate;
 
     // Validate and normalize category using composition
     const normalizationResult = this.categoryNormalizer.normalize(expenseData.category);
     expenseData.category = normalizationResult.category;
 
-    // Create expense directly with Prisma
-    const expense = await this.prisma.expense.create({
-      data: {
-        userId: expenseData.userId,
-        date: expenseData.date,
-        amount: expenseData.amount,
-        category: expenseData.category,
-        description: expenseData.description,
-      }
-    });
+    try {
+      // Create expense directly with Prisma
+      const expense = await this.prisma.expense.create({
+        data: {
+          userId: expenseData.userId,
+          date: normalizedDate,
+          amount: expenseData.amount,
+          category: expenseData.category,
+          description: expenseData.description,
+        }
+      });
     
-    console.log(`Expense added: $${expense.amount} for ${expense.category} on ${expense.date}`);
-    
-    // Build success message using MessageBuilder
-    const message = this.messageBuilder.buildExpenseCreatedMessage(
-      expense,
-      normalizationResult
-    );
+      console.log(`Expense added: $${expense.amount} for ${expense.category} on ${expense.date}`);
+      
+      // Build success message using MessageBuilder
+      const message = this.messageBuilder.buildExpenseCreatedMessage(
+        expense,
+        normalizationResult
+      );
 
-    // Build warnings if category was normalized
-    const warnings: string[] = [];
-    const categoryWarning = this.messageBuilder.buildCategoryNormalizationWarning(normalizationResult);
-    if (categoryWarning) {
-      warnings.push(categoryWarning);
+      // Build warnings if category was normalized
+      const warnings: string[] = [];
+      const categoryWarning = this.messageBuilder.buildCategoryNormalizationWarning(normalizationResult);
+      if (categoryWarning) {
+        warnings.push(categoryWarning);
+      }
+      
+      // Return structured result using generic ServiceResult
+      return success(
+        {
+          id: expense.id,
+          amount: expense.amount,
+          category: expense.category,
+          description: expense.description,
+          date: expense.date.toISOString().split('T')[0]
+        },
+        message,
+        warnings.length > 0 ? warnings : undefined
+      );
+    } catch (error) {
+      console.error('Database error in addExpense:', error);
+      return failure(
+        'A technical error occurred while adding the expense',
+        'DATABASE_ERROR',
+        error instanceof Error ? error.message : 'Unknown error'
+      );
     }
-    
-    // Return structured result using generic ServiceResult
-    return success(
-      {
-        id: expense.id,
-        amount: expense.amount,
-        category: expense.category,
-        description: expense.description,
-        date: expense.date.toISOString().split('T')[0]
-      },
-      message,
-      warnings.length > 0 ? warnings : undefined
-    );
   }
 }

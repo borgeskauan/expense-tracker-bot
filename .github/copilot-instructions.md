@@ -37,11 +37,18 @@ Services use **shared utility classes** (not base classes):
 ### ServiceResult Pattern
 All service methods return `ServiceResult<T>` from `src/types/ServiceResult.ts`:
 ```typescript
+// Success case
 return success(data, "Expense added: $50 for Food", ["Category normalized from 'food' to 'Food & Dining'"]);
+
+// Failure case with validation errors
+return failure("Validation failed", "VALIDATION_ERROR", "Amount must be positive", ["Amount must be positive"]);
 ```
 - `success<T>(data, message, warnings?)` for success
-- `failure(message, code?, details?)` for errors
-- Used by AI function declarations to return structured responses
+- `failure(message, code?, details?, validationErrors?)` for errors
+- **CRITICAL**: Validators NEVER throw - they return `ValidationResult` objects
+- Services return `failure()` for validation errors instead of throwing
+- AI receives structured error information and generates user-friendly messages
+- Used by AI function declarations to return structured responses for both success and failure
 
 ### Domain Objects for Complex Logic
 - `RecurrencePattern` (`src/services/domain/RecurrencePattern.ts`): Encapsulates frequency calculations (nextDue, validation)
