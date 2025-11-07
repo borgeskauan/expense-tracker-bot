@@ -3,11 +3,6 @@ export interface FunctionCallResult {
   newConversationEntries: Content[]; // Only the new entries added during this interaction
 }
 
-export interface HealthResponse {
-  status: string;
-  timestamp: string;
-}
-
 export interface Content {
   role: "user" | "model";
   parts: Part[];

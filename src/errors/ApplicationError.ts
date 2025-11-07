@@ -39,20 +39,6 @@ export class ApplicationError extends Error {
     // Maintains proper stack trace for where our error was thrown
     Error.captureStackTrace(this, this.constructor);
   }
-
-  /**
-   * Convert error to JSON representation
-   */
-  toJSON(): Record<string, any> {
-    return {
-      name: this.name,
-      message: this.message,
-      code: this.code,
-      statusCode: this.statusCode,
-      details: this.details,
-      timestamp: this.timestamp.toISOString(),
-    };
-  }
 }
 
 /**
@@ -77,16 +63,6 @@ export class ValidationError extends ApplicationError {
       { ...details, validationErrors }
     );
     this.validationErrors = validationErrors;
-  }
-
-  /**
-   * Create ValidationError from validation result
-   */
-  static fromValidationResult(errors: string[]): ValidationError {
-    const message = errors.length === 1 
-      ? errors[0] 
-      : `Validation failed: ${errors.join('; ')}`;
-    return new ValidationError(message, errors);
   }
 }
 
