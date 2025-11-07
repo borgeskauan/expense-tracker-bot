@@ -37,15 +37,4 @@ export class UserContextProvider {
   setUserId(userId: string): void {
     this.userId = userId;
   }
-
-  /**
-   * Create a user context provider from a WhatsApp JID or other identifier
-   * 
-   * @param identifier - The identifier to extract user ID from
-   * @returns A new UserContextProvider instance
-   */
-  static fromIdentifier(identifier: string): UserContextProvider {
-    // In the future, this could normalize WhatsApp JIDs or other identifiers
-    return new UserContextProvider(identifier);
-  }
 }

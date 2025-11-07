@@ -52,27 +52,6 @@ export class WhatsAppService {
       throw error;
     }
   }
-
-  /**
-   * Normalize phone number to JID format if needed
-   * @param phoneNumber - Phone number with or without @s.whatsapp.net
-   * @returns Normalized JID
-   */
-  normalizeJID(phoneNumber: string): string {
-    if (phoneNumber.includes('@')) {
-      return phoneNumber;
-    }
-    return `${phoneNumber}@s.whatsapp.net`;
-  }
-
-  /**
-   * Extract phone number from JID
-   * @param jid - WhatsApp JID (e.g., "1234567890@s.whatsapp.net")
-   * @returns Phone number
-   */
-  extractPhoneNumber(jid: string): string {
-    return jid.split('@')[0];
-  }
 }
 
 // Singleton instance

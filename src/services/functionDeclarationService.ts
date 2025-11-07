@@ -174,19 +174,4 @@ export class FunctionDeclarationService {
     }
     return await func(parameters);
   }
-
-  /**
-   * Get available function names
-   */
-  getAvailableFunctions(): string[] {
-    return Array.from(this.functionMapping.keys());
-  }
-
-  /**
-   * Check if a function exists
-   * @param functionName - The name of the function to check
-   */
-  hasFunction(functionName: string): boolean {
-    return this.functionMapping.has(functionName);
-  }
 }

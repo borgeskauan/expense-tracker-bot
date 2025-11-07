@@ -26,13 +26,6 @@ export const DEFAULT_CATEGORIES = [
 export type ExpenseCategory = typeof DEFAULT_CATEGORIES[number];
 
 /**
- * Get all available categories
- */
-export function getAvailableCategories(): string[] {
-  return [...DEFAULT_CATEGORIES];
-}
-
-/**
  * Check if a category is valid
  */
 export function isValidCategory(category: string): boolean {
