@@ -1,4 +1,4 @@
-import { Content, FunctionCallResult, IAIService, IAIMessageService } from "../types/ai";
+import { Content, FunctionCallResult, IAIService, IAIMessageService } from "../../types/ai";
 import { FunctionDeclarationService } from "./functionDeclarationService";
 
 

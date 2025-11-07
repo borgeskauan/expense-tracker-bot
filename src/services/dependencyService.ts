@@ -1,9 +1,9 @@
-import { GeminiService } from './geminiService';
-import { AIMessageService } from './aiMessageService';
+import { GeminiService } from './ai/geminiService';
+import { AIMessageService } from './ai/aiMessageService';
 import { config } from '../config';
-import { FunctionDeclarationService } from './functionDeclarationService';
-import { ExpenseService } from './expenseService';
-import { RecurringExpenseService } from './recurringExpenseService';
+import { FunctionDeclarationService } from './ai/functionDeclarationService';
+import { ExpenseService } from './business/expenseService';
+import { RecurringExpenseService } from './business/recurringExpenseService';
 
 export class DependencyService {
   private static instance: DependencyService;

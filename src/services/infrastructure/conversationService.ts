@@ -1,6 +1,6 @@
-import { PrismaClient } from '../generated/prisma';
-import { Content } from '../types/ai';
-import { PrismaClientManager } from '../lib/PrismaClientManager';
+import { PrismaClient } from '../../generated/prisma';
+import { Content } from '../../types/ai';
+import { PrismaClientManager } from '../../lib/PrismaClientManager';
 
 export class ConversationService {
   private prisma: PrismaClient;

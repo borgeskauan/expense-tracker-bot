@@ -1,9 +1,9 @@
 import { Type } from "@google/genai";
-import { Expense, RecurringExpenseInput } from "../types/models";
-import { ExpenseService } from "./expenseService";
-import { RecurringExpenseService } from "./recurringExpenseService";
-import { DEFAULT_CATEGORIES, getCategoryDescription } from "../config/categories";
-import { FREQUENCIES } from "../config/frequencies";
+import { Expense, RecurringExpenseInput } from "../../types/models";
+import { ExpenseService } from "../business/expenseService";
+import { RecurringExpenseService } from "../business/recurringExpenseService";
+import { DEFAULT_CATEGORIES, getCategoryDescription } from "../../config/categories";
+import { FREQUENCIES } from "../../config/frequencies";
 
 // Function declarations
 const getCurrentDateDeclaration = {

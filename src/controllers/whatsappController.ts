@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { AIMessageService } from '../services/aiMessageService';
-import { whatsappService } from '../services/whatsappService';
-import { conversationService } from '../services/conversationService';
+import { AIMessageService } from '../services/ai/aiMessageService';
+import { whatsappService } from '../services/infrastructure/whatsappService';
+import { conversationService } from '../services/infrastructure/conversationService';
 import { WhatsAppWebhookPayload } from '../types/whatsapp';
 
 export class WhatsAppController {

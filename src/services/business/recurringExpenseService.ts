@@ -1,12 +1,12 @@
-import { RecurringExpenseInput, RecurringExpenseResult, RecurringExpenseData } from '../types/models';
-import { success } from '../types/ServiceResult';
-import { CategoryNormalizer } from '../lib/CategoryNormalizer';
-import { UserContextProvider } from '../lib/UserContextProvider';
-import { RecurringExpenseValidator } from '../validators/RecurringExpenseValidator';
-import { PrismaClientManager } from '../lib/PrismaClientManager';
-import { MessageBuilder } from '../lib/MessageBuilder';
-import { ErrorMapper } from '../lib/ErrorMapper';
-import { PrismaClient } from '../generated/prisma';
+import { RecurringExpenseInput, RecurringExpenseResult, RecurringExpenseData } from '../../types/models';
+import { success } from '../../types/ServiceResult';
+import { CategoryNormalizer } from '../../lib/CategoryNormalizer';
+import { UserContextProvider } from '../../lib/UserContextProvider';
+import { RecurringExpenseValidator } from '../../validators/RecurringExpenseValidator';
+import { PrismaClientManager } from '../../lib/PrismaClientManager';
+import { MessageBuilder } from '../../lib/MessageBuilder';
+import { ErrorMapper } from '../../lib/ErrorMapper';
+import { PrismaClient } from '../../generated/prisma';
 
 export class RecurringExpenseService {
   private prisma: PrismaClient;

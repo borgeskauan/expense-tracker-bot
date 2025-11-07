@@ -1,12 +1,12 @@
-import { Expense, ExpenseResult, ExpenseData } from '../types/models';
-import { success } from '../types/ServiceResult';
-import { CategoryNormalizer } from '../lib/CategoryNormalizer';
-import { UserContextProvider } from '../lib/UserContextProvider';
-import { ExpenseValidator } from '../validators/ExpenseValidator';
-import { PrismaClientManager } from '../lib/PrismaClientManager';
-import { MessageBuilder } from '../lib/MessageBuilder';
-import { ErrorMapper } from '../lib/ErrorMapper';
-import { PrismaClient } from '../generated/prisma';
+import { Expense, ExpenseResult, ExpenseData } from '../../types/models';
+import { success } from '../../types/ServiceResult';
+import { CategoryNormalizer } from '../../lib/CategoryNormalizer';
+import { UserContextProvider } from '../../lib/UserContextProvider';
+import { ExpenseValidator } from '../../validators/ExpenseValidator';
+import { PrismaClientManager } from '../../lib/PrismaClientManager';
+import { MessageBuilder } from '../../lib/MessageBuilder';
+import { ErrorMapper } from '../../lib/ErrorMapper';
+import { PrismaClient } from '../../generated/prisma';
 
 export class ExpenseService {
   private prisma: PrismaClient;
