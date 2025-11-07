@@ -27,7 +27,7 @@ const expenseDeclaration = {
         properties: {
           date: {
             type: Type.STRING,
-            description: "The date of the expense in ISO format (YYYY-MM-DD). For relative dates like 'today', 'yesterday', 'last Monday', calculate the actual date. You can call getCurrentDate() if you need to confirm today's date.",
+            description: "The date of the expense in ISO format (YYYY-MM-DD). For relative dates like 'today', 'yesterday', 'last Monday', calculate the actual date. You can call getCurrentDate() if you need to confirm today's date. If not specified, defaults to today.",
           },
           amount: {
             type: Type.NUMBER,
@@ -43,7 +43,7 @@ const expenseDeclaration = {
             description: "Optional description of the expense",
           },
         },
-        required: ["date", "amount", "category"],
+        required: ["amount", "category"],
       },
     },
     required: ["expenseData"],

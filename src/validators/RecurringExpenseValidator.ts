@@ -116,11 +116,6 @@ export class RecurringExpenseValidator {
    * @returns Normalized Date object
    */
   normalizeStartDate(startDate?: Date | string): Date {
-    if (startDate === undefined) {
-      console.log('startDate not provided, defaulting to today');
-      return new Date();
-    }
-
     return this.expenseValidator.normalizeDate(startDate);
   }
 }

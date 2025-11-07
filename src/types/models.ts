@@ -2,7 +2,7 @@ import { ServiceResult } from './ServiceResult';
 
 export interface Expense {
   userId: string;
-  date: Date;
+  date?: Date | string; // Optional, defaults to today if not specified
   amount: number;
   category: string;
   description: string | null;

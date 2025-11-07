@@ -1,4 +1,4 @@
-import { Expense, ExpenseResult, ExpenseData } from '../../types/models';
+import { Expense, ExpenseResult } from '../../types/models';
 import { success } from '../../types/ServiceResult';
 import { CategoryNormalizer } from '../../lib/CategoryNormalizer';
 import { UserContextProvider } from '../../lib/UserContextProvider';
@@ -27,8 +27,8 @@ export class ExpenseService {
    */
   async addExpense(expenseData: Expense): Promise<ExpenseResult> {
     expenseData.userId = this.userContext.getUserId();
-    
-    // Normalize and validate date
+
+    // Normalize date
     expenseData.date = this.validator.normalizeDate(expenseData.date);
 
     // Validate amount and date

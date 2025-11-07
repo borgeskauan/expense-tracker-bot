@@ -84,7 +84,12 @@ export class ExpenseValidator {
    * @returns Normalized Date object
    * @throws ValidationError if date is invalid
    */
-  normalizeDate(date: Date | string): Date {
+  normalizeDate(date?: Date | string): Date {
+    if (!date) {
+      console.log('startDate not provided, defaulting to today');
+      return new Date();
+    }
+
     const dateObj = date instanceof Date ? date : new Date(date);
     
     if (isNaN(dateObj.getTime())) {
