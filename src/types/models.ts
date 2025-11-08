@@ -88,3 +88,24 @@ export interface RecurringTransactionUpdateData {
  * Uses generic ServiceResult for consistency
  */
 export type RecurringTransactionResult = ServiceResult<RecurringTransactionData>;
+
+/**
+ * Query result - generic key-value pairs from database
+ */
+export interface QueryResultData {
+  [key: string]: any;
+}
+
+/**
+ * Full query result with metadata
+ */
+export interface QueryResult {
+  data: QueryResultData[];  // Raw database rows
+  rowCount: number;         // Number of rows returned
+  sqlExecuted: string;      // The SQL that was run (for AI context)
+}
+
+/**
+ * Result type for query operations
+ */
+export type QueryResultServiceResult = ServiceResult<QueryResult>;

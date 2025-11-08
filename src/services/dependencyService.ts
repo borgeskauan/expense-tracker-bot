@@ -4,6 +4,7 @@ import { config } from '../config';
 import { FunctionDeclarationService } from './ai/functionDeclarationService';
 import { TransactionService } from './business/transactionService';
 import { RecurringTransactionService } from './business/recurringTransactionService';
+import { QueryExecutorService } from './business/queryExecutorService';
 
 export class DependencyService {
   private static instance: DependencyService;
@@ -35,10 +36,12 @@ export class DependencyService {
 
       const transactionService = new TransactionService();
       const recurringTransactionService = new RecurringTransactionService();
+      const queryExecutorService = new QueryExecutorService();
 
       const functionDeclarationService = new FunctionDeclarationService(
         transactionService,
-        recurringTransactionService
+        recurringTransactionService,
+        queryExecutorService
       );
 
       // Create services with configuration from the config module

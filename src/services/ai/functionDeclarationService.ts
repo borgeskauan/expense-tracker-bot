@@ -2,6 +2,7 @@ import { Type } from "@google/genai";
 import { Transaction, RecurringTransactionInput, TransactionUpdateData, RecurringTransactionUpdateData } from "../../types/models";
 import { TransactionService } from "../business/transactionService";
 import { RecurringTransactionService } from "../business/recurringTransactionService";
+import { QueryExecutorService } from "../business/queryExecutorService";
 import { EXPENSE_CATEGORIES, getExpenseCategoryDescription } from "../../config/expenseCategories";
 import { INCOME_CATEGORIES, getIncomeCategoryDescription } from "../../config/incomeCategories";
 import { FREQUENCIES } from "../../config/frequencies";
@@ -247,9 +248,92 @@ const editLastRecurringTransactionDeclaration = {
   },
 };
 
+const generateReportDeclaration = {
+  name: "generateReport",
+  parameters: {
+    type: Type.OBJECT,
+    description: `Generate custom reports by querying transaction data. This function returns a structured result with a 'success' field.
+    
+    On SUCCESS (success=true):
+    - Returns 'data' array with query results (raw database rows)
+    - Returns 'rowCount' (number of results)
+    - Returns 'sqlExecuted' (the query that ran)
+    
+    On FAILURE (success=false):
+    - Returns validation error message explaining what went wrong
+    
+    Database Schema:
+    - "Transaction" table columns: id (INTEGER), userId (TEXT), date (TEXT), amount (REAL), category (TEXT), description (TEXT), type (TEXT: 'expense' or 'income'), createdAt (TEXT), updatedAt (TEXT)
+    - "RecurringTransaction" table columns: id (INTEGER), userId (TEXT), amount (REAL), category (TEXT), description (TEXT), type (TEXT: 'expense' or 'income'), frequency (TEXT), interval (INTEGER), dayOfWeek (INTEGER), dayOfMonth (INTEGER), startDate (TEXT), nextDue (TEXT), isActive (INTEGER: 0 or 1), createdAt (TEXT), updatedAt (TEXT)
+    
+    CRITICAL SQL RULES:
+    1. Always include WHERE userId = '{USER_ID_PLACEHOLDER}' (system will inject actual userId)
+    2. Only SELECT queries allowed (no DELETE, UPDATE, INSERT, DROP, ALTER, CREATE, TRUNCATE, EXEC, PRAGMA)
+    3. MUST use LIMIT clause to restrict results (recommended LIMIT 50 or less for readability). System auto-adds LIMIT 100 if missing.
+    4. Can use SQLite functions: strftime, SUM, COUNT, AVG, MAX, MIN, GROUP BY, ORDER BY, etc.
+    5. Date format in database is ISO string (YYYY-MM-DD or YYYY-MM-DD HH:MM:SS)
+    6. Table names should be quoted with double quotes for SQLite compatibility (e.g., "Transaction")
+    
+    Common Query Examples:
+    
+    1. Total spending by category:
+       SELECT category, SUM(amount) as total FROM "Transaction" 
+       WHERE userId = '{USER_ID_PLACEHOLDER}' AND type = 'expense' 
+       GROUP BY category ORDER BY total DESC LIMIT 10
+    
+    2. Monthly spending totals:
+       SELECT strftime('%Y-%m', date) as month, SUM(amount) as total 
+       FROM "Transaction" WHERE userId = '{USER_ID_PLACEHOLDER}' AND type = 'expense' 
+       GROUP BY month ORDER BY month DESC LIMIT 12
+    
+    3. Recent transactions:
+       SELECT date, amount, category, description, type 
+       FROM "Transaction" WHERE userId = '{USER_ID_PLACEHOLDER}' 
+       ORDER BY date DESC LIMIT 10
+    
+    4. Income vs Expenses comparison:
+       SELECT type, SUM(amount) as total 
+       FROM "Transaction" WHERE userId = '{USER_ID_PLACEHOLDER}' 
+       GROUP BY type
+    
+    5. Spending in specific date range:
+       SELECT date, amount, category, description 
+       FROM "Transaction" WHERE userId = '{USER_ID_PLACEHOLDER}' 
+       AND date >= '2025-11-01' AND date <= '2025-11-30' 
+       ORDER BY date DESC LIMIT 50
+    
+    6. Average daily spending:
+       SELECT AVG(daily_total) as avg_per_day FROM (
+         SELECT date, SUM(amount) as daily_total 
+         FROM "Transaction" WHERE userId = '{USER_ID_PLACEHOLDER}' AND type = 'expense' 
+         GROUP BY date
+       ) LIMIT 1
+    
+    After receiving results:
+    - Format the data into a user-friendly message with proper context
+    - Use currency formatting for amounts ($X.XX)
+    - If rowCount is 0, tell user no results were found and suggest they add transactions
+    - Summarize insights when relevant (highest category, trends, comparisons)
+    - Keep formatting concise and readable for WhatsApp
+    - Use bullet points or numbered lists for clarity`,
+    properties: {
+      queryDescription: {
+        type: Type.STRING,
+        description: "Brief human-readable description of what the query does (for logging and user context)",
+      },
+      sqlQuery: {
+        type: Type.STRING,
+        description: "The SQL SELECT query to execute. MUST include 'WHERE userId = {USER_ID_PLACEHOLDER}' and LIMIT clause. Use SQLite syntax.",
+      },
+    },
+    required: ["queryDescription", "sqlQuery"],
+  },
+};
+
 export class FunctionDeclarationService {
   private readonly transactionService: TransactionService;
   private readonly recurringTransactionService: RecurringTransactionService;
+  private readonly queryExecutorService: QueryExecutorService;
 
   private readonly functionMapping = new Map<string, Function>([
     // Date/Time functions
@@ -329,6 +413,17 @@ export class FunctionDeclarationService {
         return await this.recurringTransactionService.editLastRecurringTransaction(params.updates, params.transactionType);
       }
     ],
+    // Generate report with dynamic SQL query (async)
+    [
+      "generateReport",
+      async (params: { queryDescription: string, sqlQuery: string }) => {
+        console.log("Executing generateReport with params:", params);
+        return await this.queryExecutorService.executeQuery(
+          params.sqlQuery,
+          params.queryDescription
+        );
+      }
+    ],
   ]);
 
   private readonly functionDeclarations = [
@@ -338,15 +433,18 @@ export class FunctionDeclarationService {
     recurringExpenseDeclaration,
     recurringIncomeDeclaration,
     editLastTransactionDeclaration,
-    editLastRecurringTransactionDeclaration
+    editLastRecurringTransactionDeclaration,
+    generateReportDeclaration
   ];
 
   constructor(
     transactionService: TransactionService, 
-    recurringTransactionService: RecurringTransactionService
+    recurringTransactionService: RecurringTransactionService,
+    queryExecutorService: QueryExecutorService
   ) {
     this.transactionService = transactionService;
     this.recurringTransactionService = recurringTransactionService;
+    this.queryExecutorService = queryExecutorService;
   }
 
   /**
