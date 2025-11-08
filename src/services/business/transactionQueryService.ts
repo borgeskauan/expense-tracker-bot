@@ -63,6 +63,50 @@ export class TransactionQueryService {
   }
 
   /**
+   * Get a specific transaction by ID with ownership validation
+   * @param id - Transaction ID
+   * @param userId - User ID for ownership validation
+   * @returns ServiceResult with transaction data or error
+   */
+  async getTransactionById(id: number, userId: string): Promise<TransactionResult> {
+    try {
+      const transaction = await this.prisma.transaction.findFirst({
+        where: {
+          id,
+          userId, // Ownership validation
+        },
+      });
+
+      if (!transaction) {
+        return failure(
+          'Transaction not found',
+          'NOT_FOUND',
+          'The transaction does not exist or you do not have access to it.'
+        );
+      }
+
+      return success(
+        {
+          id: transaction.id,
+          amount: transaction.amount,
+          category: transaction.category,
+          description: transaction.description,
+          date: transaction.date.toISOString().split('T')[0],
+          type: transaction.type as TransactionType,
+        },
+        'Transaction found'
+      );
+    } catch (error) {
+      console.error('Error fetching transaction by ID:', error);
+      return failure(
+        'Failed to fetch transaction',
+        'DATABASE_ERROR',
+        'An error occurred while retrieving the transaction.'
+      );
+    }
+  }
+
+  /**
    * Get the last recurring transaction for a user
    * @param userId - The user ID
    * @param type - Optional transaction type filter (expense or income)

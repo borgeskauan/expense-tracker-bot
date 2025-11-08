@@ -223,6 +223,61 @@ const editLastRecurringTransactionDeclaration = {
   },
 };
 
+const editTransactionByIdDeclaration = {
+  name: "editTransactionById",
+  parameters: {
+    type: Type.OBJECT,
+    description: `Edit a specific transaction by its ID. Use this when the user wants to edit a transaction they previously identified via queryTransactions.
+    
+    WORKFLOW:
+    1. User asks to edit a specific transaction (e.g., "Edit that $50 coffee expense")
+    2. Use queryTransactions to find matching transactions (including 'id' column in SELECT)
+    3. Present the matches to the user with their IDs clearly visible
+    4. Once user confirms which transaction to edit, call this function with the ID and updates
+    
+    This function returns a structured result with a 'success' field.
+    
+    On SUCCESS (success=true):
+    - Returns updated transaction data (id, amount, category, description, date, type)
+    - Returns human-readable message confirming the changes
+    - May include warnings if category was normalized
+    
+    On FAILURE (success=false):
+    - Returns error message (e.g., "Transaction not found", "Validation failed")
+    - For validation errors, returns details about what went wrong
+    - If transaction not found, user may not have access or it doesn't exist`,
+    properties: {
+      id: {
+        type: Type.NUMBER,
+        description: "The ID of the transaction to edit (obtained from queryTransactions results)",
+      },
+      updates: {
+        type: Type.OBJECT,
+        description: "Fields to update in the transaction - only include the fields the user wants to change",
+        properties: {
+          amount: {
+            type: Type.NUMBER,
+            description: "New transaction amount (optional)",
+          },
+          category: {
+            type: Type.STRING,
+            description: "New category (optional). Will be normalized to valid category for the transaction type.",
+          },
+          description: {
+            type: Type.STRING,
+            description: "New description (optional)",
+          },
+          date: {
+            type: Type.STRING,
+            description: "New date in YYYY-MM-DD format (optional)",
+          },
+        },
+      },
+    },
+    required: ["id", "updates"],
+  },
+};
+
 const queryTransactionsDeclaration = {
   name: "queryTransactions",
   parameters: {
@@ -386,6 +441,14 @@ export class FunctionDeclarationService {
         return await this.recurringTransactionService.editLastRecurringTransaction(params.updates, params.transactionType);
       }
     ],
+    // Edit transaction by ID (async)
+    [
+      "editTransactionById",
+      async (params: { id: number, updates: TransactionUpdateData }) => {
+        console.log("Executing editTransactionById with params:", params);
+        return await this.transactionService.editTransactionById(params.id, params.updates);
+      }
+    ],
     // Query transactions for reports, editing, or deleting (async)
     [
       "queryTransactions",
@@ -405,6 +468,7 @@ export class FunctionDeclarationService {
     recurringTransactionDeclaration,
     editLastTransactionDeclaration,
     editLastRecurringTransactionDeclaration,
+    editTransactionByIdDeclaration,
     queryTransactionsDeclaration
   ];
 

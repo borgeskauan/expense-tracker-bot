@@ -248,4 +248,38 @@ export class TransactionService {
     // Update the transaction (passing existing data to avoid redundant query)
     return await this.updateTransaction(lastTxResult.data!.id, updates, lastTxResult.data!);
   }
+
+  /**
+   * Edit a specific transaction by ID
+   * @param id - Transaction ID
+   * @param updates - Fields to update
+   * @returns ServiceResult with updated transaction or error
+   */
+  async editTransactionById(
+    id: number,
+    updates: TransactionUpdateData
+  ): Promise<TransactionResult> {
+    // Get userId from injected context (same pattern as editLastTransaction)
+    const userIdObj: { userId?: string } = {};
+    this.baseOps.injectUserId(userIdObj);
+    const userId = userIdObj.userId || '';
+    
+    if (!userId) {
+      return failure(
+        'User context not available',
+        'MISSING_CONTEXT',
+        'Unable to identify user for transaction lookup'
+      );
+    }
+
+    // Query for transaction by ID with ownership validation
+    const transactionResult = await this.queryService.getTransactionById(id, userId);
+    
+    if (!transactionResult.success) {
+      return transactionResult;
+    }
+
+    // Update the transaction (passing existing data to avoid redundant query)
+    return await this.updateTransaction(id, updates, transactionResult.data!);
+  }
 }

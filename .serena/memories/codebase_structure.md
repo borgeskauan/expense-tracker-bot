@@ -35,8 +35,8 @@ src/
 │   ├── business/
 │   │   ├── queryExecutorService.ts   # Dynamic SQL query execution
 │   │   ├── recurringTransactionService.ts
-│   │   ├── transactionQueryService.ts
-│   │   └── transactionService.ts
+│   │   ├── transactionQueryService.ts # Query methods (getLastTransaction, getTransactionById)
+│   │   └── transactionService.ts     # Transaction CRUD operations
 │   └── infrastructure/
 │       ├── conversationService.ts    # Conversation history persistence
 │       └── whatsappService.ts        # WhatsApp message handling
@@ -64,12 +64,21 @@ Defined in `functionDeclarationService.ts`:
 - `createRecurringTransaction(recurringTransactionData)`: Creates recurring transaction (expense or income via type field)
 - `editLastTransaction(updates)`: Edits most recent transaction
 - `editLastRecurringTransaction(updates)`: Edits most recent recurring transaction
+- `editTransactionById(id, updates)`: Edits a specific transaction by its ID (discovered via queryTransactions)
 - `queryTransactions(queryDescription, sqlQuery)`: Queries transaction data for reports, finding transactions to edit, or finding transactions to delete
 
 **CRITICAL**: 
 - Unified functions - `addTransaction` and `createRecurringTransaction` handle both expenses and income via the `type` field
 - `queryTransactions` serves dual purpose: generating reports AND discovering transaction IDs for editing/deleting operations
 - When finding transactions for editing/deleting, query must include `id` column in SELECT statement
+- `editTransactionById` requires transaction ID from queryTransactions results
+
+**Edit Transaction Workflow**:
+1. User requests to edit specific transaction
+2. AI uses `queryTransactions` with `id` column in SELECT
+3. AI presents matches with IDs to user
+4. User confirms which transaction
+5. AI calls `editTransactionById(id, updates)` with the ID and changes
 
 ### Transaction Types
 - `expense`: Money spent
