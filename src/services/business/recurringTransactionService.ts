@@ -362,4 +362,38 @@ export class RecurringTransactionService {
     // Update the recurring transaction (passing existing data to avoid redundant query)
     return await this.updateRecurringTransaction(lastRecurringTxResult.data!.id, updates, lastRecurringTxResult.data!);
   }
+
+  /**
+   * Edit a specific recurring transaction by ID
+   * @param id - Recurring transaction ID
+   * @param updates - Fields to update
+   * @returns ServiceResult with updated recurring transaction or error
+   */
+  async editRecurringTransactionById(
+    id: number,
+    updates: RecurringTransactionUpdateData
+  ): Promise<RecurringTransactionResult> {
+    // Get userId from injected context (same pattern as editLastRecurringTransaction)
+    const userIdObj: { userId?: string } = {};
+    this.baseOps.injectUserId(userIdObj);
+    const userId = userIdObj.userId || '';
+    
+    if (!userId) {
+      return failure(
+        'User context not available',
+        'MISSING_CONTEXT',
+        'Unable to identify user for recurring transaction lookup'
+      );
+    }
+
+    // Query for recurring transaction by ID with ownership validation
+    const recurringTxResult = await this.queryService.getRecurringTransactionById(id, userId);
+    
+    if (!recurringTxResult.success) {
+      return recurringTxResult;
+    }
+
+    // Update the recurring transaction (passing existing data to avoid redundant query)
+    return await this.updateRecurringTransaction(id, updates, recurringTxResult.data!);
+  }
 }

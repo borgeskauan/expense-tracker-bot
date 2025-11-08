@@ -278,6 +278,45 @@ const editTransactionByIdDeclaration = {
   },
 };
 
+const editRecurringTransactionByIdDeclaration = {
+  name: "editRecurringTransactionById",
+  parameters: {
+    type: Type.OBJECT,
+    description: `Edit a specific recurring transaction by its ID. Use this when the user wants to edit a recurring transaction (subscription, bill, salary, etc.) they previously identified via queryTransactions.
+    
+    WORKFLOW:
+    1. User asks to edit a specific recurring transaction (e.g., "Edit my Netflix subscription", "Change that monthly rent")
+    2. Use queryTransactions on "RecurringTransaction" table to find matching recurring transactions (including 'id' column in SELECT)
+    3. Present the matches to the user with their IDs clearly visible
+    4. Once user confirms which recurring transaction to edit, call this function with the ID and updates
+    
+    This function returns a structured result with a 'success' field.
+    
+    On SUCCESS (success=true):
+    - Returns updated recurring transaction data (id, amount, category, description, frequency, interval, dayOfWeek, dayOfMonth, monthOfYear, nextDue, startDate, type)
+    - Returns human-readable message confirming the changes
+    - May include warnings if category was normalized
+    - If frequency/timing fields changed, nextDue will be automatically recalculated
+    
+    On FAILURE (success=false):
+    - Returns error message (e.g., "Recurring transaction not found", "Validation failed")
+    - For validation errors, returns details about what went wrong
+    - If recurring transaction not found, user may not have access or it doesn't exist/is inactive`,
+    properties: {
+      id: {
+        type: Type.NUMBER,
+        description: "The ID of the recurring transaction to edit (obtained from queryTransactions results on RecurringTransaction table)",
+      },
+      updates: {
+        type: Type.OBJECT,
+        description: "Fields to update in the recurring transaction - only include the fields the user wants to change",
+        properties: createRecurringTransactionUpdateProperties(),
+      },
+    },
+    required: ["id", "updates"],
+  },
+};
+
 const queryTransactionsDeclaration = {
   name: "queryTransactions",
   parameters: {
@@ -449,6 +488,14 @@ export class FunctionDeclarationService {
         return await this.transactionService.editTransactionById(params.id, params.updates);
       }
     ],
+    // Edit recurring transaction by ID (async)
+    [
+      "editRecurringTransactionById",
+      async (params: { id: number, updates: RecurringTransactionUpdateData }) => {
+        console.log("Executing editRecurringTransactionById with params:", params);
+        return await this.recurringTransactionService.editRecurringTransactionById(params.id, params.updates);
+      }
+    ],
     // Query transactions for reports, editing, or deleting (async)
     [
       "queryTransactions",
@@ -469,6 +516,7 @@ export class FunctionDeclarationService {
     editLastTransactionDeclaration,
     editLastRecurringTransactionDeclaration,
     editTransactionByIdDeclaration,
+    editRecurringTransactionByIdDeclaration,
     queryTransactionsDeclaration
   ];
 

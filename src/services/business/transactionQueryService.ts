@@ -159,4 +159,55 @@ export class TransactionQueryService {
       );
     }
   }
+
+  /**
+   * Get a specific recurring transaction by ID with ownership validation
+   * @param id - Recurring transaction ID
+   * @param userId - User ID for ownership validation
+   * @returns ServiceResult with recurring transaction data or error
+   */
+  async getRecurringTransactionById(id: number, userId: string): Promise<RecurringTransactionResult> {
+    try {
+      const recurringTransaction = await this.prisma.recurringTransaction.findFirst({
+        where: {
+          id,
+          userId, // Ownership validation
+          isActive: true, // Only allow editing active recurring transactions
+        },
+      });
+
+      if (!recurringTransaction) {
+        return failure(
+          'Recurring transaction not found',
+          'NOT_FOUND',
+          'The recurring transaction does not exist, is inactive, or you do not have access to it.'
+        );
+      }
+
+      return success(
+        {
+          id: recurringTransaction.id,
+          amount: recurringTransaction.amount,
+          category: recurringTransaction.category,
+          description: recurringTransaction.description,
+          frequency: recurringTransaction.frequency,
+          interval: recurringTransaction.interval,
+          dayOfWeek: recurringTransaction.dayOfWeek,
+          dayOfMonth: recurringTransaction.dayOfMonth,
+          monthOfYear: recurringTransaction.monthOfYear,
+          nextDue: recurringTransaction.nextDue.toISOString().split('T')[0],
+          startDate: recurringTransaction.startDate.toISOString().split('T')[0],
+          type: recurringTransaction.type as TransactionType,
+        },
+        'Recurring transaction found'
+      );
+    } catch (error) {
+      console.error('Error fetching recurring transaction by ID:', error);
+      return failure(
+        'Failed to fetch recurring transaction',
+        'DATABASE_ERROR',
+        'An error occurred while retrieving the recurring transaction.'
+      );
+    }
+  }
 }

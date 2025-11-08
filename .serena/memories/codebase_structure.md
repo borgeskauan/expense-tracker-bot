@@ -34,8 +34,8 @@ src/
 │   │   └── geminiService.ts          # Gemini API wrapper
 │   ├── business/
 │   │   ├── queryExecutorService.ts   # Dynamic SQL query execution
-│   │   ├── recurringTransactionService.ts
-│   │   ├── transactionQueryService.ts # Query methods (getLastTransaction, getTransactionById)
+│   │   ├── recurringTransactionService.ts # Recurring transaction CRUD operations
+│   │   ├── transactionQueryService.ts # Query methods (getLastTransaction, getTransactionById, getLastRecurringTransaction, getRecurringTransactionById)
 │   │   └── transactionService.ts     # Transaction CRUD operations
 │   └── infrastructure/
 │       ├── conversationService.ts    # Conversation history persistence
@@ -65,20 +65,32 @@ Defined in `functionDeclarationService.ts`:
 - `editLastTransaction(updates)`: Edits most recent transaction
 - `editLastRecurringTransaction(updates)`: Edits most recent recurring transaction
 - `editTransactionById(id, updates)`: Edits a specific transaction by its ID (discovered via queryTransactions)
+- `editRecurringTransactionById(id, updates)`: Edits a specific recurring transaction by its ID (discovered via queryTransactions)
 - `queryTransactions(queryDescription, sqlQuery)`: Queries transaction data for reports, finding transactions to edit, or finding transactions to delete
 
 **CRITICAL**: 
 - Unified functions - `addTransaction` and `createRecurringTransaction` handle both expenses and income via the `type` field
 - `queryTransactions` serves dual purpose: generating reports AND discovering transaction IDs for editing/deleting operations
 - When finding transactions for editing/deleting, query must include `id` column in SELECT statement
-- `editTransactionById` requires transaction ID from queryTransactions results
+- `editTransactionById` requires transaction ID from queryTransactions results on "Transaction" table
+- `editRecurringTransactionById` requires recurring transaction ID from queryTransactions results on "RecurringTransaction" table
 
-**Edit Transaction Workflow**:
+**Edit Transaction Workflows**:
+
+ONE-TIME TRANSACTIONS:
 1. User requests to edit specific transaction
-2. AI uses `queryTransactions` with `id` column in SELECT
+2. AI uses `queryTransactions` on "Transaction" table with `id` column in SELECT
 3. AI presents matches with IDs to user
 4. User confirms which transaction
 5. AI calls `editTransactionById(id, updates)` with the ID and changes
+
+RECURRING TRANSACTIONS:
+1. User requests to edit specific recurring transaction (subscription, bill, salary)
+2. AI uses `queryTransactions` on "RecurringTransaction" table with `id` column in SELECT
+3. AI presents matches with IDs and context (frequency, amount) to user
+4. User confirms which recurring transaction
+5. AI calls `editRecurringTransactionById(id, updates)` with the ID and changes
+6. System recalculates nextDue if frequency/timing fields changed
 
 ### Transaction Types
 - `expense`: Money spent

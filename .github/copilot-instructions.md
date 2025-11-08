@@ -91,6 +91,7 @@ Defined in `src/services/functionDeclarationService.ts`:
 - `editLastTransaction(updates)`: Edits most recent transaction
 - `editLastRecurringTransaction(updates)`: Edits most recent recurring transaction
 - `editTransactionById(id, updates)`: Edits a specific transaction by its ID
+- `editRecurringTransactionById(id, updates)`: Edits a specific recurring transaction by its ID
 - `queryTransactions(queryDescription, sqlQuery)`: Queries transaction data for reports, finding transactions to edit, or finding transactions to delete
 
 **CRITICAL - Unified Functions Pattern**: 
@@ -102,7 +103,9 @@ Defined in `src/services/functionDeclarationService.ts`:
 **Query Function Dual Purpose**:
 - `queryTransactions` serves multiple purposes: generating reports AND discovering transaction IDs for editing/deleting
 - When finding transactions for editing/deleting, query must include `id` column in SELECT
-- Results include transaction IDs that can be used with `editTransactionById` or future delete functions
+- Query the "Transaction" table for one-time transactions
+- Query the "RecurringTransaction" table for recurring transactions (subscriptions, bills, recurring income)
+- Results include transaction IDs that can be used with `editTransactionById`, `editRecurringTransactionById`, or future delete functions
 
 **Transaction Types**: Enum in `src/config/transactionTypes.ts`:
 - `TRANSACTION_TYPES = ['expense', 'income']`
