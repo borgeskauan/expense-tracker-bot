@@ -60,15 +60,13 @@ prisma/
 ### Function Declarations (AI)
 Defined in `functionDeclarationService.ts`:
 - `getCurrentDate()`: Returns current date
-- `addExpense(expenseData)`: Adds expense transaction
-- `addIncome(incomeData)`: Adds income transaction
-- `createRecurringExpense(recurringExpenseData)`: Creates recurring expense
-- `createRecurringIncome(recurringIncomeData)`: Creates recurring income
+- `addTransaction(transactionData)`: Adds transaction (expense or income via type field)
+- `createRecurringTransaction(recurringTransactionData)`: Creates recurring transaction (expense or income via type field)
 - `editLastTransaction(updates)`: Edits most recent transaction
 - `editLastRecurringTransaction(updates)`: Edits most recent recurring transaction
 - `generateReport(queryDescription, sqlQuery)`: Dynamic SQL queries
 
-**CRITICAL**: Expenses and income are SEPARATE AI functions with different category enums
+**CRITICAL**: Unified functions - `addTransaction` and `createRecurringTransaction` handle both expenses and income via the `type` field
 
 ### Transaction Types
 - `expense`: Money spent
@@ -85,3 +83,4 @@ Stored as string in database, validated via enum in `transactionTypes.ts`
 - Each with optional `interval` (default 1)
 - Weekly requires `dayOfWeek` (0-6)
 - Monthly requires `dayOfMonth` (1-31)
+- Yearly requires `monthOfYear` (0-11)

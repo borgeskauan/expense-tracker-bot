@@ -3,72 +3,8 @@ import { Transaction, RecurringTransactionInput, TransactionUpdateData, Recurrin
 import { TransactionService } from "../business/transactionService";
 import { RecurringTransactionService } from "../business/recurringTransactionService";
 import { QueryExecutorService } from "../business/queryExecutorService";
-import { EXPENSE_CATEGORIES, getExpenseCategoryDescription } from "../../config/expenseCategories";
-import { INCOME_CATEGORIES, getIncomeCategoryDescription } from "../../config/incomeCategories";
 import { FREQUENCIES } from "../../config/frequencies";
 import { TRANSACTION_TYPES, TransactionType } from "../../config/transactionTypes";
-
-// Shared property definitions
-const createTransactionProperties = (categories: readonly string[], categoryDescription: string) => ({
-  date: {
-    type: Type.STRING,
-    description: "The date of the transaction in ISO format (YYYY-MM-DD). For relative dates like 'today', 'yesterday', 'last Monday', calculate the actual date. You can call getCurrentDate() if you need to confirm today's date. Defaults to today if not specified.",
-  },
-  amount: {
-    type: Type.NUMBER,
-    description: "The amount of the transaction, must be positive",
-  },
-  category: {
-    type: Type.STRING,
-    description: `${categoryDescription} If user mentions an unclear category or doesn't mention it at all, choose the closest match from the list.`,
-    enum: [...categories],
-  },
-  description: {
-    type: Type.STRING,
-    description: "Optional description of the transaction",
-  },
-});
-
-const createRecurringTransactionProperties = (categories: readonly string[], categoryDescription: string) => ({
-  amount: {
-    type: Type.NUMBER,
-    description: "The amount of the transaction, must be positive",
-  },
-  category: {
-    type: Type.STRING,
-    description: `${categoryDescription} If user mentions an unclear category, choose the closest match from the list.`,
-    enum: [...categories],
-  },
-  description: {
-    type: Type.STRING,
-    description: "Optional description of the transaction",
-  },
-  frequency: {
-    type: Type.STRING,
-    description: "How often the transaction recurs",
-    enum: FREQUENCIES,
-  },
-  interval: {
-    type: Type.NUMBER,
-    description: "The interval for the frequency (e.g., 2 for 'every 2 weeks'). Defaults to 1 if not specified. Must be at least 1.",
-  },
-  dayOfWeek: {
-    type: Type.NUMBER,
-    description: "For weekly frequency only: The day of the week (0=Sunday, 1=Monday, 2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday). Required for weekly frequency. Defaults to the day of the week of the startDate if not specified.",
-  },
-  dayOfMonth: {
-    type: Type.NUMBER,
-    description: "For monthly frequency only: The day of the month (1-31). Required for monthly frequency. Defaults to the day of the month of the startDate if not specified.",
-  },
-  monthOfYear: {
-    type: Type.NUMBER,
-    description: "For yearly frequency only: The month of the year (0=January, 1=February, ..., 11=December). Required for yearly frequency. Defaults to the month of the startDate if not specified.",
-  },
-  startDate: {
-    type: Type.STRING,
-    description: "The date when the recurring transaction starts in ISO format (YYYY-MM-DD). For relative dates like 'today', 'next Monday', calculate the actual date. You can call getCurrentDate() if needed. Defaults to today if not specified.",
-  },
-});
 
 // Update property definitions for editing
 const createTransactionUpdateProperties = () => ({
@@ -146,71 +82,102 @@ const getCurrentDateDeclaration = {
   },
 };
 
-const expenseDeclaration = {
-  name: "addExpense",
+const transactionDeclaration = {
+  name: "addTransaction",
   parameters: {
     type: Type.OBJECT,
-    description: "Add a new expense record (money spent) for a user. This function returns a structured result with a 'success' field. On success (success=true), it includes a formatted message and expense details. On failure (success=false), it includes validation errors in the 'error' object with 'validationErrors' array. IMPORTANT: Always check the 'success' field and handle both cases. If validation fails, explain the errors to the user in a friendly way and ask for the missing or corrected information.",
+    description: "Add a new transaction (expense or income) for a user. This function returns a structured result with a 'success' field. On success (success=true), it includes a formatted message and transaction details. On failure (success=false), it includes validation errors in the 'error' object with 'validationErrors' array. IMPORTANT: Always check the 'success' field and handle both cases. If validation fails, explain the errors to the user in a friendly way and ask for the missing or corrected information.",
     properties: {
-      expenseData: {
+      transactionData: {
         type: Type.OBJECT,
-        description: "The expense data to add",
-        properties: createTransactionProperties(EXPENSE_CATEGORIES, getExpenseCategoryDescription()),
-        required: ["date", "amount", "category"],
+        description: "The transaction data to add",
+        properties: {
+          date: {
+            type: Type.STRING,
+            description: "The date of the transaction in ISO format (YYYY-MM-DD). For relative dates like 'today', 'yesterday', 'last Monday', calculate the actual date. You can call getCurrentDate() if you need to confirm today's date. Defaults to today if not specified.",
+          },
+          amount: {
+            type: Type.NUMBER,
+            description: "The amount of the transaction, must be positive",
+          },
+          category: {
+            type: Type.STRING,
+            description: "The category for the transaction. Choose from the appropriate list based on the type (expense or income). If user mentions an unclear category or doesn't mention it at all, choose the closest match from the list.",
+          },
+          description: {
+            type: Type.STRING,
+            description: "Optional description of the transaction",
+          },
+          type: {
+            type: Type.STRING,
+            description: "The transaction type: 'expense' for money spent or 'income' for money received",
+            enum: [...TRANSACTION_TYPES],
+          },
+        },
+        required: ["date", "amount", "category", "type"],
       },
     },
-    required: ["expenseData"],
+    required: ["transactionData"],
   },
 };
 
-const incomeDeclaration = {
-  name: "addIncome",
+const recurringTransactionDeclaration = {
+  name: "createRecurringTransaction",
   parameters: {
     type: Type.OBJECT,
-    description: "Add a new income record (money received) for a user. This function returns a structured result with a 'success' field. On success (success=true), it includes a formatted message and income details. On failure (success=false), it includes validation errors in the 'error' object with 'validationErrors' array. IMPORTANT: Always check the 'success' field and handle both cases. If validation fails, explain the errors to the user in a friendly way and ask for the missing or corrected information.",
+    description: "Create a new recurring transaction (expense or income) that repeats on a regular schedule (daily, weekly, monthly, or yearly). This function returns a structured result with a 'success' field. On success (success=true), it includes a formatted message and recurring transaction details including when the next transaction is due. On failure (success=false), it includes validation errors in the 'error' object with 'validationErrors' array. IMPORTANT: Always check the 'success' field and handle both cases. If validation fails, explain the errors to the user in a friendly way and ask for the missing or corrected information.",
     properties: {
-      incomeData: {
+      recurringTransactionData: {
         type: Type.OBJECT,
-        description: "The income data to add",
-        properties: createTransactionProperties(INCOME_CATEGORIES, getIncomeCategoryDescription()),
-        required: ["date", "amount", "category"],
+        description: "The recurring transaction data to add",
+        properties: {
+          amount: {
+            type: Type.NUMBER,
+            description: "The amount of the transaction, must be positive",
+          },
+          category: {
+            type: Type.STRING,
+            description: "The category for the transaction. Choose from the appropriate list based on the type (expense or income). If user mentions an unclear category, choose the closest match from the list.",
+          },
+          description: {
+            type: Type.STRING,
+            description: "Optional description of the transaction",
+          },
+          frequency: {
+            type: Type.STRING,
+            description: "How often the transaction recurs",
+            enum: FREQUENCIES,
+          },
+          interval: {
+            type: Type.NUMBER,
+            description: "The interval for the frequency (e.g., 2 for 'every 2 weeks'). Defaults to 1 if not specified. Must be at least 1.",
+          },
+          dayOfWeek: {
+            type: Type.NUMBER,
+            description: "For weekly frequency only: The day of the week (0=Sunday, 1=Monday, 2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday). Required for weekly frequency. Defaults to the day of the week of the startDate if not specified.",
+          },
+          dayOfMonth: {
+            type: Type.NUMBER,
+            description: "For monthly frequency only: The day of the month (1-31). Required for monthly frequency. Defaults to the day of the month of the startDate if not specified.",
+          },
+          monthOfYear: {
+            type: Type.NUMBER,
+            description: "For yearly frequency only: The month of the year (0=January, 1=February, ..., 11=December). Required for yearly frequency. Defaults to the month of the startDate if not specified.",
+          },
+          startDate: {
+            type: Type.STRING,
+            description: "The date when the recurring transaction starts in ISO format (YYYY-MM-DD). For relative dates like 'today', 'next Monday', calculate the actual date. You can call getCurrentDate() if needed. Defaults to today if not specified.",
+          },
+          type: {
+            type: Type.STRING,
+            description: "The transaction type: 'expense' for recurring expenses or 'income' for recurring income",
+            enum: [...TRANSACTION_TYPES],
+          },
+        },
+        required: ["amount", "category", "frequency", "type"],
       },
     },
-    required: ["incomeData"],
-  },
-};
-
-const recurringExpenseDeclaration = {
-  name: "createRecurringExpense",
-  parameters: {
-    type: Type.OBJECT,
-    description: "Create a new recurring expense (money spent regularly) that repeats on a regular schedule (daily, weekly, monthly, or yearly). This function returns a structured result with a 'success' field. On success (success=true), it includes a formatted message and recurring expense details including when the next expense is due. On failure (success=false), it includes validation errors in the 'error' object with 'validationErrors' array. IMPORTANT: Always check the 'success' field and handle both cases. If validation fails, explain the errors to the user in a friendly way and ask for the missing or corrected information.",
-    properties: {
-      recurringExpenseData: {
-        type: Type.OBJECT,
-        description: "The recurring expense data to add",
-        properties: createRecurringTransactionProperties(EXPENSE_CATEGORIES, getExpenseCategoryDescription()),
-        required: ["amount", "category", "frequency"],
-      },
-    },
-    required: ["recurringExpenseData"],
-  },
-};
-
-const recurringIncomeDeclaration = {
-  name: "createRecurringIncome",
-  parameters: {
-    type: Type.OBJECT,
-    description: "Create a new recurring income (money received regularly) that repeats on a regular schedule (daily, weekly, monthly, or yearly). This function returns a structured result with a 'success' field. On success (success=true), it includes a formatted message and recurring income details including when the next income is due. On failure (success=false), it includes validation errors in the 'error' object with 'validationErrors' array. IMPORTANT: Always check the 'success' field and handle both cases. If validation fails, explain the errors to the user in a friendly way and ask for the missing or corrected information.",
-    properties: {
-      recurringIncomeData: {
-        type: Type.OBJECT,
-        description: "The recurring income data to add",
-        properties: createRecurringTransactionProperties(INCOME_CATEGORIES, getIncomeCategoryDescription()),
-        required: ["amount", "category", "frequency"],
-      },
-    },
-    required: ["recurringIncomeData"],
+    required: ["recurringTransactionData"],
   },
 };
 
@@ -361,48 +328,20 @@ export class FunctionDeclarationService {
         };
       }
     ],
-    // Expense functions (async)
+    // Transaction function (async) - handles both expense and income
     [
-      "addExpense",
-      async (params: { expenseData: Omit<Transaction, 'type'> }) => {
-        console.log("Executing addExpense with params:", params);
-        return await this.transactionService.addTransaction({
-          ...params.expenseData,
-          type: TransactionType.EXPENSE
-        });
+      "addTransaction",
+      async (params: { transactionData: Transaction }) => {
+        console.log("Executing addTransaction with params:", params);
+        return await this.transactionService.addTransaction(params.transactionData);
       }
     ],
-    // Income functions (async)
+    // Recurring transaction function (async) - handles both expense and income
     [
-      "addIncome",
-      async (params: { incomeData: Omit<Transaction, 'type'> }) => {
-        console.log("Executing addIncome with params:", params);
-        return await this.transactionService.addTransaction({
-          ...params.incomeData,
-          type: TransactionType.INCOME
-        });
-      }
-    ],
-    // Recurring expense functions (async)
-    [
-      "createRecurringExpense",
-      async (params: { recurringExpenseData: Omit<RecurringTransactionInput, 'type'> }) => {
-        console.log("Executing createRecurringExpense with params:", params);
-        return await this.recurringTransactionService.createRecurringTransaction({
-          ...params.recurringExpenseData,
-          type: TransactionType.EXPENSE
-        });
-      }
-    ],
-    // Recurring income functions (async)
-    [
-      "createRecurringIncome",
-      async (params: { recurringIncomeData: Omit<RecurringTransactionInput, 'type'> }) => {
-        console.log("Executing createRecurringIncome with params:", params);
-        return await this.recurringTransactionService.createRecurringTransaction({
-          ...params.recurringIncomeData,
-          type: TransactionType.INCOME
-        });
+      "createRecurringTransaction",
+      async (params: { recurringTransactionData: RecurringTransactionInput }) => {
+        console.log("Executing createRecurringTransaction with params:", params);
+        return await this.recurringTransactionService.createRecurringTransaction(params.recurringTransactionData);
       }
     ],
     // Edit last transaction (async)
@@ -436,10 +375,8 @@ export class FunctionDeclarationService {
 
   private readonly functionDeclarations = [
     getCurrentDateDeclaration, 
-    expenseDeclaration,
-    incomeDeclaration,
-    recurringExpenseDeclaration,
-    recurringIncomeDeclaration,
+    transactionDeclaration,
+    recurringTransactionDeclaration,
     editLastTransactionDeclaration,
     editLastRecurringTransactionDeclaration,
     generateReportDeclaration

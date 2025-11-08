@@ -86,17 +86,17 @@ Import as: `import { PrismaClient } from '../generated/prisma'`
 
 Defined in `src/services/functionDeclarationService.ts`:
 - `getCurrentDate()`: Returns current date for relative date calculations
-- `addExpense(expenseData)`: Adds single expense transaction (type='expense')
-- `addIncome(incomeData)`: Adds single income transaction (type='income')
-- `createRecurringExpense(recurringExpenseData)`: Creates recurring expense (type='expense')
-- `createRecurringIncome(recurringIncomeData)`: Creates recurring income (type='income')
+- `addTransaction(transactionData)`: Adds transaction (expense or income based on type field)
+- `createRecurringTransaction(recurringTransactionData)`: Creates recurring transaction (expense or income based on type field)
+- `editLastTransaction(updates)`: Edits most recent transaction
+- `editLastRecurringTransaction(updates)`: Edits most recent recurring transaction
+- `generateReport(queryDescription, sqlQuery)`: Executes dynamic SQL queries
 
-**CRITICAL - Separate Functions Pattern**: 
-- Expenses and income are SEPARATE AI functions with different category enums
-- `addExpense` and `createRecurringExpense` use `EXPENSE_CATEGORIES` enum
-- `addIncome` and `createRecurringIncome` use `INCOME_CATEGORIES` enum
-- Functions internally set the `type` field ('expense' or 'income') before calling TransactionService
-- AI chooses function based on user intent - no type parameter needed in function calls
+**CRITICAL - Unified Functions Pattern**: 
+- Single `addTransaction` function handles both expenses and income via `type` field
+- Single `createRecurringTransaction` function handles both recurring expenses and income via `type` field
+- AI chooses appropriate `type` value ('expense' or 'income') based on user intent
+- Category validation happens server-side based on the type field
 
 **Transaction Types**: Enum in `src/config/transactionTypes.ts`:
 - `TRANSACTION_TYPES = ['expense', 'income']`
@@ -109,6 +109,9 @@ Defined in `src/services/functionDeclarationService.ts`:
 - Salary, Freelance, Investment Returns, Business Income, Rental Income, Gifts Received, Refunds, Bonuses, Side Hustle, Other
 
 **Frequencies**: `daily`, `weekly`, `monthly`, `yearly` from `src/config/frequencies.ts`
+- Weekly requires `dayOfWeek` (0-6, Sunday-Saturday)
+- Monthly requires `dayOfMonth` (1-31)
+- Yearly requires `monthOfYear` (0-11, January-December)
 
 ## Development Workflow
 
@@ -164,7 +167,7 @@ Response includes function call trace: `functionUsed`, `functionCalls`, `iterati
 - **Conversation History**: AIMessageService receives full history but only returns NEW entries (`newConversationEntries`) to avoid duplicates in DB
 - **Category Normalization**: AI can send any string, CategoryNormalizer fuzzy matches to valid category based on transaction type, returns warnings
 - **Type-Aware Categories**: CategoryNormalizer accepts `type` parameter to validate against correct category set
-- **Separate AI Functions**: 4 distinct functions (addExpense, addIncome, createRecurringExpense, createRecurringIncome) - each sets type internally
+- **Separate AI Functions**: 2 distinct functions (addTransaction, createRecurringTransaction) - each sets type internally
 - **Prisma Import Path**: Always `from '../generated/prisma'` (relative to current file depth)
 - **Singleton Pattern**: DependencyService, PrismaClientManager, conversationService, whatsappService are all singletons (avoid duplicate instances)
 - **Date Handling**: TransactionValidator normalizes Date objects to ISO strings; Gemini receives format instructions in function declarations
