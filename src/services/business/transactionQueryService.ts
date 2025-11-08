@@ -47,7 +47,7 @@ export class TransactionQueryService {
           amount: transaction.amount,
           category: transaction.category,
           description: transaction.description,
-          date: transaction.date.toISOString().split('T')[0],
+          date: transaction.date,
           type: transaction.type as TransactionType,
         },
         'Transaction found'
@@ -91,7 +91,7 @@ export class TransactionQueryService {
           amount: transaction.amount,
           category: transaction.category,
           description: transaction.description,
-          date: transaction.date.toISOString().split('T')[0],
+          date: transaction.date,
           type: transaction.type as TransactionType,
         },
         'Transaction found'
@@ -144,8 +144,8 @@ export class TransactionQueryService {
           dayOfWeek: recurringTransaction.dayOfWeek,
           dayOfMonth: recurringTransaction.dayOfMonth,
           monthOfYear: recurringTransaction.monthOfYear,
-          nextDue: recurringTransaction.nextDue.toISOString().split('T')[0],
-          startDate: recurringTransaction.startDate.toISOString().split('T')[0],
+          nextDue: recurringTransaction.nextDue,
+          startDate: recurringTransaction.startDate,
           type: recurringTransaction.type as TransactionType,
         },
         'Recurring transaction found'
@@ -195,8 +195,8 @@ export class TransactionQueryService {
           dayOfWeek: recurringTransaction.dayOfWeek,
           dayOfMonth: recurringTransaction.dayOfMonth,
           monthOfYear: recurringTransaction.monthOfYear,
-          nextDue: recurringTransaction.nextDue.toISOString().split('T')[0],
-          startDate: recurringTransaction.startDate.toISOString().split('T')[0],
+          nextDue: recurringTransaction.nextDue,
+          startDate: recurringTransaction.startDate,
           type: recurringTransaction.type as TransactionType,
         },
         'Recurring transaction found'

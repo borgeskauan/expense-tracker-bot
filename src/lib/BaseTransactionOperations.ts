@@ -14,7 +14,7 @@ export interface BasicTransactionValidationResult {
   isValid: boolean;
   amount: number;
   normalizedCategory: string;
-  normalizedDate: Date;
+  normalizedDate: string; // ISO-8601 DateTime string (e.g., 2025-11-08T17:30:00.000Z)
   warnings: string[];
   validationErrors?: string[];
 }

@@ -41,7 +41,7 @@ export class RecurringTransactionValidator {
    */
   createRecurrencePattern(
     frequency: string,
-    startDate: Date,
+    startDate: Date | string,
     interval?: number,
     dayOfWeek?: number,
     dayOfMonth?: number,
@@ -73,7 +73,7 @@ export class RecurringTransactionValidator {
   validate(
     amount: number,
     frequency: string,
-    startDate: Date,
+    startDate: Date | string,
     type: TransactionType,
     interval?: number | null,
     dayOfWeek?: number | null,
@@ -129,7 +129,7 @@ export class RecurringTransactionValidator {
    * @param startDate - The start date to normalize
    * @returns Normalized Date object
    */
-  normalizeStartDate(startDate?: Date | string): Date {
+  normalizeStartDate(startDate?: Date | string): string {
     return this.transactionValidator.normalizeDate(startDate);
   }
 }

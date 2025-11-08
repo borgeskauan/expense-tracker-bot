@@ -12,7 +12,11 @@ export class MessageBuilder {
   /**
    * Format a date as ISO string (YYYY-MM-DD)
    */
-  private formatDate(date: Date): string {
+  private formatDate(date: Date | string): string {
+    if (typeof date === 'string') {
+      // Extract just the date portion from ISO string (YYYY-MM-DD)
+      return date.split('T')[0];
+    }
     return date.toISOString().split('T')[0];
   }
 

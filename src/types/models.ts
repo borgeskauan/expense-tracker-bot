@@ -18,7 +18,7 @@ export interface TransactionData {
   amount: number;
   category: string;
   description: string | null;
-  date: string; // ISO format for consistency
+  date: string; // ISO-8601 DateTime string (e.g., 2025-11-08T17:30:00.000Z)
   type: TransactionType;
 }
 
@@ -66,8 +66,8 @@ export interface RecurringTransactionData {
   dayOfWeek: number | null;
   dayOfMonth: number | null;
   monthOfYear: number | null;
-  nextDue: string; // ISO date
-  startDate: string; // ISO date
+  nextDue: string; // ISO-8601 DateTime string
+  startDate: string; // ISO-8601 DateTime string
   type: TransactionType;
 }
 

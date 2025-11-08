@@ -81,17 +81,25 @@ export class TransactionValidator {
    * @param date - The date to normalize (Date, string, or undefined)
    * @returns Date object (defaults to today if undefined)
    */
-  normalizeDate(date?: Date | string): Date {
+  normalizeDate(date?: Date | string): string {
     if (!date) {
       console.log('Date not provided, defaulting to today');
-      return new Date();
+      return new Date().toISOString(); // Full ISO-8601: 2025-11-08T17:30:00.000Z
     }
     
     if (date instanceof Date) {
-      return date;
+      return date.toISOString(); // Full ISO-8601
     }
     
-    return new Date(date);
+    // If it's already a string, parse and validate
+    const parsedDate = new Date(date);
+    if (isNaN(parsedDate.getTime())) {
+      // If invalid, default to today
+      console.log('Invalid date string provided, defaulting to today');
+      return new Date().toISOString();
+    }
+    
+    return parsedDate.toISOString(); // Full ISO-8601
   }
 
   /**
@@ -106,7 +114,7 @@ export class TransactionValidator {
     amount: number, 
     date: Date | string | undefined,
     type: TransactionType
-  ): ValidationResult & { normalizedDate: Date } {
+  ): ValidationResult & { normalizedDate: string } {
     const amountResult = this.validateAmount(amount);
     const typeResult = this.validateType(type);
     

@@ -31,13 +31,13 @@ export class RecurringTransactionService {
   private validateRecurrencePattern(
     amount: number,
     frequency: string,
-    startDate: Date,
+    startDate: string,
     type: TransactionType,
     interval?: number | null,
     dayOfWeek?: number | null,
     dayOfMonth?: number | null,
     monthOfYear?: number | null
-  ): { isValid: boolean; recurrencePattern?: any; nextDue?: Date; errors?: string[] } {
+  ): { isValid: boolean; recurrencePattern?: any; nextDue?: string; errors?: string[] } {
     // Validate the recurrence pattern
     const recurrenceValidation = this.validator.validate(
       amount,
@@ -170,8 +170,8 @@ export class RecurringTransactionService {
           dayOfWeek: recurringTransaction.dayOfWeek,
           dayOfMonth: recurringTransaction.dayOfMonth,
           monthOfYear: recurringTransaction.monthOfYear,
-          nextDue: recurringTransaction.nextDue.toISOString().split('T')[0],
-          startDate: recurringTransaction.startDate.toISOString().split('T')[0],
+          nextDue: recurringTransaction.nextDue,
+          startDate: recurringTransaction.startDate,
           type: recurringTransaction.type as TransactionType
         },
         message,
@@ -227,7 +227,10 @@ export class RecurringTransactionService {
       const monthOfYear = updates.monthOfYear !== undefined ? updates.monthOfYear : existingData.monthOfYear;
       
       // Validate the new recurrence pattern (validator handles null conversion)
-      const startDate = new Date(existingData.startDate);
+      // existingData.startDate could be Date or string depending on Prisma schema
+      const startDate = typeof existingData.startDate === 'string' 
+        ? existingData.startDate 
+        : new Date(existingData.startDate).toISOString().split('T')[0];
       const finalType = (updates.type || existingData.type) as TransactionType;
       const mergedAmount = updates.amount !== undefined ? updates.amount : existingData.amount;
       
@@ -316,8 +319,8 @@ export class RecurringTransactionService {
           dayOfWeek: updatedRecurringTransaction.dayOfWeek,
           dayOfMonth: updatedRecurringTransaction.dayOfMonth,
           monthOfYear: updatedRecurringTransaction.monthOfYear,
-          nextDue: updatedRecurringTransaction.nextDue.toISOString().split('T')[0],
-          startDate: updatedRecurringTransaction.startDate.toISOString().split('T')[0],
+          nextDue: updatedRecurringTransaction.nextDue,
+          startDate: updatedRecurringTransaction.startDate,
           type: updatedRecurringTransaction.type as TransactionType,
         },
         message,

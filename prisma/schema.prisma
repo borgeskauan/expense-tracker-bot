@@ -17,7 +17,7 @@ datasource db {
 model Transaction {
   id          Int      @id @default(autoincrement())
   userId      String
-  date        DateTime
+  date        String   // ISO-8601 DateTime string for SQLite strftime compatibility
   amount      Float
   category    String
   description String?
@@ -44,8 +44,8 @@ model RecurringTransaction {
   monthOfYear Int?     // For yearly: 0-11 (January-December)
   
   // Lifecycle dates
-  startDate   DateTime
-  nextDue     DateTime // When next expense should be created
+  startDate   String   // ISO-8601 DateTime string for SQLite strftime compatibility
+  nextDue     String   // ISO-8601 DateTime string for SQLite strftime compatibility
   
   // Status
   isActive    Boolean  @default(true)

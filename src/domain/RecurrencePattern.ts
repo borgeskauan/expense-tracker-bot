@@ -48,12 +48,15 @@ export class RecurrencePattern {
    */
   static create(
     frequency: string,
-    startDate: Date,
+    startDate: Date | string,
     interval?: number,
     dayOfWeek?: number,
     dayOfMonth?: number,
     monthOfYear?: number
   ): RecurrencePattern {
+    // Convert string date to Date object for calculations
+    const startDateObj = startDate instanceof Date ? startDate : new Date(startDate);
+    
     // Validate frequency
     if (!isValidFrequency(frequency)) {
       throw new Error(
@@ -75,9 +78,9 @@ export class RecurrencePattern {
     if (frequency === 'weekly') {
       // Default dayOfWeek to the day of week of startDate if not provided
       if (validDayOfWeek === undefined) {
-        validDayOfWeek = startDate.getDay(); // 0-6 (Sunday-Saturday)
+        validDayOfWeek = startDateObj.getDay(); // 0-6 (Sunday-Saturday)
         console.log(
-          `dayOfWeek not provided for weekly frequency, defaulting to ${validDayOfWeek} (${startDate.toLocaleDateString('en-US', { weekday: 'long' })})`
+          `dayOfWeek not provided for weekly frequency, defaulting to ${validDayOfWeek} (${startDateObj.toLocaleDateString('en-US', { weekday: 'long' })})`
         );
       }
       if (!isValidDayOfWeek(validDayOfWeek)) {
@@ -88,7 +91,7 @@ export class RecurrencePattern {
     if (frequency === 'monthly') {
       // Default dayOfMonth to the day of month of startDate if not provided
       if (validDayOfMonth === undefined) {
-        validDayOfMonth = startDate.getDate(); // 1-31
+        validDayOfMonth = startDateObj.getDate(); // 1-31
         console.log(
           `dayOfMonth not provided for monthly frequency, defaulting to ${validDayOfMonth}`
         );
@@ -101,9 +104,9 @@ export class RecurrencePattern {
     if (frequency === 'yearly') {
       // Default monthOfYear to the month of startDate if not provided
       if (validMonthOfYear === undefined) {
-        validMonthOfYear = startDate.getMonth(); // 0-11 (January-December)
+        validMonthOfYear = startDateObj.getMonth(); // 0-11 (January-December)
         console.log(
-          `monthOfYear not provided for yearly frequency, defaulting to ${validMonthOfYear} (${startDate.toLocaleDateString('en-US', { month: 'long' })})`
+          `monthOfYear not provided for yearly frequency, defaulting to ${validMonthOfYear} (${startDateObj.toLocaleDateString('en-US', { month: 'long' })})`
         );
       }
       if (!isValidMonthOfYear(validMonthOfYear)) {
@@ -126,15 +129,21 @@ export class RecurrencePattern {
    * @param startDate - The start date for calculation
    * @returns The next due date
    */
-  calculateNextDueDate(startDate: Date): Date {
-    return calculateNextDueDate(
-      startDate,
+  calculateNextDueDate(startDate: Date | string): string {
+    // Convert string to Date for calculations
+    const startDateObj = startDate instanceof Date ? startDate : new Date(startDate);
+    
+    const nextDue = calculateNextDueDate(
+      startDateObj,
       this.frequency,
       this.interval,
       this.dayOfWeek,
       this.dayOfMonth,
       this.monthOfYear
     );
+    
+    // Return as full ISO-8601 string (with time)
+    return nextDue.toISOString(); // 2025-11-08T00:00:00.000Z
   }
 
   /**

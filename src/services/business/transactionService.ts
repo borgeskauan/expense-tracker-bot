@@ -84,7 +84,7 @@ export class TransactionService {
           amount: transaction.amount,
           category: transaction.category,
           description: transaction.description,
-          date: transaction.date.toISOString().split('T')[0],
+          date: transaction.date,
           type: transaction.type as TransactionType
         },
         message,
@@ -187,7 +187,7 @@ export class TransactionService {
           amount: updatedTransaction.amount,
           category: updatedTransaction.category,
           description: updatedTransaction.description,
-          date: updatedTransaction.date.toISOString().split('T')[0],
+          date: updatedTransaction.date,
           type: updatedTransaction.type as TransactionType,
         },
         {
@@ -203,7 +203,7 @@ export class TransactionService {
           amount: updatedTransaction.amount,
           category: updatedTransaction.category,
           description: updatedTransaction.description,
-          date: updatedTransaction.date.toISOString().split('T')[0],
+          date: updatedTransaction.date,
           type: updatedTransaction.type as TransactionType,
         },
         message,
