@@ -64,9 +64,12 @@ Defined in `functionDeclarationService.ts`:
 - `createRecurringTransaction(recurringTransactionData)`: Creates recurring transaction (expense or income via type field)
 - `editLastTransaction(updates)`: Edits most recent transaction
 - `editLastRecurringTransaction(updates)`: Edits most recent recurring transaction
-- `generateReport(queryDescription, sqlQuery)`: Dynamic SQL queries
+- `queryTransactions(queryDescription, sqlQuery)`: Queries transaction data for reports, finding transactions to edit, or finding transactions to delete
 
-**CRITICAL**: Unified functions - `addTransaction` and `createRecurringTransaction` handle both expenses and income via the `type` field
+**CRITICAL**: 
+- Unified functions - `addTransaction` and `createRecurringTransaction` handle both expenses and income via the `type` field
+- `queryTransactions` serves dual purpose: generating reports AND discovering transaction IDs for editing/deleting operations
+- When finding transactions for editing/deleting, query must include `id` column in SELECT statement
 
 ### Transaction Types
 - `expense`: Money spent

@@ -90,13 +90,18 @@ Defined in `src/services/functionDeclarationService.ts`:
 - `createRecurringTransaction(recurringTransactionData)`: Creates recurring transaction (expense or income based on type field)
 - `editLastTransaction(updates)`: Edits most recent transaction
 - `editLastRecurringTransaction(updates)`: Edits most recent recurring transaction
-- `generateReport(queryDescription, sqlQuery)`: Executes dynamic SQL queries
+- `queryTransactions(queryDescription, sqlQuery)`: Queries transaction data for reports, finding transactions to edit, or finding transactions to delete
 
 **CRITICAL - Unified Functions Pattern**: 
 - Single `addTransaction` function handles both expenses and income via `type` field
 - Single `createRecurringTransaction` function handles both recurring expenses and income via `type` field
 - AI chooses appropriate `type` value ('expense' or 'income') based on user intent
 - Category validation happens server-side based on the type field
+
+**Query Function Dual Purpose**:
+- `queryTransactions` serves multiple purposes: generating reports AND discovering transaction IDs for editing/deleting
+- When finding transactions for editing/deleting, query must include `id` column in SELECT
+- Results include transaction IDs that can be used with future edit/delete functions
 
 **Transaction Types**: Enum in `src/config/transactionTypes.ts`:
 - `TRANSACTION_TYPES = ['expense', 'income']`

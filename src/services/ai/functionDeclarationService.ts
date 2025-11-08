@@ -223,16 +223,23 @@ const editLastRecurringTransactionDeclaration = {
   },
 };
 
-const generateReportDeclaration = {
-  name: "generateReport",
+const queryTransactionsDeclaration = {
+  name: "queryTransactions",
   parameters: {
     type: Type.OBJECT,
-    description: `Generate custom reports by querying transaction data. This function returns a structured result with a 'success' field.
+    description: `Query transaction data from the database. This function serves multiple purposes:
+
+    1. **Generate Reports**: Query data to create financial insights and summaries
+    2. **Find Transactions for Editing**: Discover transaction IDs to edit specific transactions
+    3. **Find Transactions for Deleting**: Discover transaction IDs to delete specific transactions
+    
+    The function returns a structured result with a 'success' field.
     
     On SUCCESS (success=true):
-    - Returns 'data' array with query results (raw database rows)
+    - Returns 'data' array with query results (raw database rows, including 'id' field)
     - Returns 'rowCount' (number of results)
     - Returns 'sqlExecuted' (the query that ran)
+    - Use the 'id' field from results to edit or delete specific transactions
     
     On FAILURE (success=false):
     - Returns validation error message explaining what went wrong
@@ -284,21 +291,40 @@ const generateReportDeclaration = {
          GROUP BY date
        ) LIMIT 1
     
+    7. Find specific transaction for editing (by description/category):
+       SELECT id, date, amount, category, description, type 
+       FROM "Transaction" WHERE userId = '{USER_ID_PLACEHOLDER}' 
+       AND (description LIKE '%coffee%' OR category = 'Food & Dining') 
+       ORDER BY date DESC LIMIT 10
+    
+    8. Find specific transaction for deleting (by amount and date):
+       SELECT id, date, amount, category, description, type 
+       FROM "Transaction" WHERE userId = '{USER_ID_PLACEHOLDER}' 
+       AND amount = 50.00 AND category = 'Entertainment' 
+       AND date >= '2025-11-01' 
+       ORDER BY date DESC LIMIT 5
+    
+    9. Find transaction by approximate description:
+       SELECT id, date, amount, category, description, type 
+       FROM "Transaction" WHERE userId = '{USER_ID_PLACEHOLDER}' 
+       AND description LIKE '%salary%' 
+       ORDER BY date DESC LIMIT 5
+    
     After receiving results:
-    - Format the data into a user-friendly message with proper context
-    - Use currency formatting for amounts ($X.XX)
-    - If rowCount is 0, tell user no results were found and suggest they add transactions
-    - Summarize insights when relevant (highest category, trends, comparisons)
+    - For REPORTS: Format the data into a user-friendly message with insights, currency formatting ($X.XX), trends, and summaries
+    - For FINDING TRANSACTIONS: Present the matching transactions with their IDs clearly visible, then ask which one to edit/delete
+    - If rowCount is 0, tell user no results were found and suggest they add transactions or adjust search criteria
     - Keep formatting concise and readable for WhatsApp
-    - Use bullet points or numbered lists for clarity`,
+    - Use bullet points or numbered lists for clarity
+    - When showing transactions for editing/deleting, include: id, date, amount, category, and description`,
     properties: {
       queryDescription: {
         type: Type.STRING,
-        description: "Brief human-readable description of what the query does (for logging and user context)",
+        description: "Brief human-readable description of what the query does - for reports, editing, or deleting (for logging and user context)",
       },
       sqlQuery: {
         type: Type.STRING,
-        description: "The SQL SELECT query to execute. MUST include 'WHERE userId = {USER_ID_PLACEHOLDER}' and LIMIT clause. Use SQLite syntax.",
+        description: "The SQL SELECT query to execute. MUST include 'WHERE userId = {USER_ID_PLACEHOLDER}' and LIMIT clause. Include 'id' column when finding transactions for editing/deleting. Use SQLite syntax.",
       },
     },
     required: ["queryDescription", "sqlQuery"],
@@ -360,11 +386,11 @@ export class FunctionDeclarationService {
         return await this.recurringTransactionService.editLastRecurringTransaction(params.updates, params.transactionType);
       }
     ],
-    // Generate report with dynamic SQL query (async)
+    // Query transactions for reports, editing, or deleting (async)
     [
-      "generateReport",
+      "queryTransactions",
       async (params: { queryDescription: string, sqlQuery: string }) => {
-        console.log("Executing generateReport with params:", params);
+        console.log("Executing queryTransactions with params:", params);
         return await this.queryExecutorService.executeQuery(
           params.sqlQuery,
           params.queryDescription
@@ -379,7 +405,7 @@ export class FunctionDeclarationService {
     recurringTransactionDeclaration,
     editLastTransactionDeclaration,
     editLastRecurringTransactionDeclaration,
-    generateReportDeclaration
+    queryTransactionsDeclaration
   ];
 
   constructor(
