@@ -61,9 +61,9 @@ export class RecurringTransactionValidator {
    * @param frequency - The recurrence frequency
    * @param startDate - The start date
    * @param type - The transaction type
-   * @param interval - The interval
-   * @param dayOfWeek - Day of week for weekly
-   * @param dayOfMonth - Day of month for monthly
+   * @param interval - The interval (accepts null and converts to undefined)
+   * @param dayOfWeek - Day of week for weekly (accepts null and converts to undefined)
+   * @param dayOfMonth - Day of month for monthly (accepts null and converts to undefined)
    * @returns Validation result with RecurrencePattern if valid
    */
   validate(
@@ -71,9 +71,9 @@ export class RecurringTransactionValidator {
     frequency: string,
     startDate: Date,
     type: TransactionType,
-    interval?: number,
-    dayOfWeek?: number,
-    dayOfMonth?: number
+    interval?: number | null,
+    dayOfWeek?: number | null,
+    dayOfMonth?: number | null
   ): {
     isValid: boolean;
     errors: string[];
@@ -89,15 +89,20 @@ export class RecurringTransactionValidator {
     const typeResult = this.validateType(type);
     errors.push(...typeResult.errors);
 
+    // Convert null to undefined for recurrence pattern creation
+    const normalizedInterval = interval !== null ? interval : undefined;
+    const normalizedDayOfWeek = dayOfWeek !== null ? dayOfWeek : undefined;
+    const normalizedDayOfMonth = dayOfMonth !== null ? dayOfMonth : undefined;
+
     // Validate and create recurrence pattern
     let recurrencePattern: RecurrencePattern | undefined;
     try {
       recurrencePattern = this.createRecurrencePattern(
         frequency,
         startDate,
-        interval,
-        dayOfWeek,
-        dayOfMonth
+        normalizedInterval,
+        normalizedDayOfWeek,
+        normalizedDayOfMonth
       );
     } catch (error) {
       errors.push(error instanceof Error ? error.message : 'Invalid recurrence pattern');

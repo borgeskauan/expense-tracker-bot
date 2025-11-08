@@ -2,6 +2,7 @@ import { Transaction as PrismaTransaction, RecurringTransaction as PrismaRecurri
 import { CategoryNormalizationResult } from './CategoryNormalizer';
 import { RecurrencePattern } from '../domain/RecurrencePattern';
 import { TransactionType } from '../config/transactionTypes';
+import { TransactionData } from '../types/models';
 
 /**
  * Utility class for building user-facing messages
@@ -102,5 +103,77 @@ export class MessageBuilder {
       return `Category "${normalizationResult.originalCategory}" was normalized to "${normalizationResult.category}"`;
     }
     return undefined;
+  }
+
+  /**
+   * Build message for transaction update
+   * 
+   * @param originalTransaction - The original transaction data before update
+   * @param updatedTransaction - The updated transaction data
+   * @param normalizationResult - Category normalization result
+   * @returns Formatted success message
+   */
+  buildTransactionUpdatedMessage(
+    originalTransaction: TransactionData,
+    updatedTransaction: TransactionData,
+    normalizationResult: CategoryNormalizationResult
+  ): string {
+    const label = this.getTransactionTypeLabel(updatedTransaction.type);
+    const changes: string[] = [];
+
+    // Detect what changed
+    if (originalTransaction.amount !== updatedTransaction.amount) {
+      changes.push(`amount from $${originalTransaction.amount} to $${updatedTransaction.amount}`);
+    }
+
+    if (originalTransaction.category !== updatedTransaction.category) {
+      let categoryChange = `category from "${originalTransaction.category}" to "${updatedTransaction.category}"`;
+      if (normalizationResult.wasNormalized) {
+        categoryChange += ` (normalized from "${normalizationResult.originalCategory}")`;
+      }
+      changes.push(categoryChange);
+    }
+
+    if (originalTransaction.description !== updatedTransaction.description) {
+      if (originalTransaction.description && updatedTransaction.description) {
+        changes.push(`description from "${originalTransaction.description}" to "${updatedTransaction.description}"`);
+      } else if (updatedTransaction.description) {
+        changes.push(`added description "${updatedTransaction.description}"`);
+      } else {
+        changes.push(`removed description`);
+      }
+    }
+
+    if (originalTransaction.date !== updatedTransaction.date) {
+      changes.push(`date from ${originalTransaction.date} to ${updatedTransaction.date}`);
+    }
+
+    if (originalTransaction.type !== updatedTransaction.type) {
+      changes.push(`type from ${originalTransaction.type} to ${updatedTransaction.type}`);
+    }
+
+    // Build final message
+    if (changes.length === 0) {
+      return `${label} updated successfully (no changes detected)`;
+    }
+
+    let message = `${label} updated successfully: `;
+    
+    if (changes.length === 1) {
+      message += `Changed ${changes[0]}`;
+    } else {
+      message += `Changed ${changes.slice(0, -1).join(', ')} and ${changes[changes.length - 1]}`;
+    }
+
+    // Add current state summary
+    message += `. Current: $${updatedTransaction.amount} for ${updatedTransaction.category}`;
+    
+    if (updatedTransaction.description) {
+      message += ` - ${updatedTransaction.description}`;
+    }
+    
+    message += ` on ${updatedTransaction.date}`;
+
+    return message;
   }
 }

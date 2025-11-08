@@ -23,6 +23,17 @@ export interface TransactionData {
 }
 
 /**
+ * Data structure for updating a transaction
+ */
+export interface TransactionUpdateData {
+  amount?: number;
+  category?: string;
+  description?: string | null;
+  date?: string;
+  type?: TransactionType;
+}
+
+/**
  * Result type for transaction operations
  * Uses generic ServiceResult for consistency
  */
@@ -56,6 +67,20 @@ export interface RecurringTransactionData {
   nextDue: string; // ISO date
   startDate: string; // ISO date
   type: TransactionType;
+}
+
+/**
+ * Data structure for updating a recurring transaction
+ */
+export interface RecurringTransactionUpdateData {
+  amount?: number;
+  category?: string;
+  description?: string | null;
+  frequency?: "daily" | "weekly" | "monthly" | "yearly";
+  interval?: number;
+  dayOfWeek?: number | null;
+  dayOfMonth?: number | null;
+  type?: TransactionType;
 }
 
 /**

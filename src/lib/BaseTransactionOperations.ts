@@ -33,6 +33,8 @@ export class BaseTransactionOperations {
   constructor(userContext?: UserContextProvider) {
     this.prisma = PrismaClientManager.getClient();
     this.categoryNormalizer = new CategoryNormalizer();
+
+    // TODO: Remove this from here, keep it in the services. This means removing the injectUserId method too.
     this.userContext = userContext || new UserContextProvider();
     this.messageBuilder = new MessageBuilder();
     this.transactionValidator = new TransactionValidator();
@@ -96,6 +98,81 @@ export class BaseTransactionOperations {
       warnings.push(categoryWarning);
     }
     return warnings;
+  }
+
+  /**
+   * Build basic update data by validating and merging updates with existing data
+   * Shared logic for both TransactionService and RecurringTransactionService updates
+   * 
+   * @param updates - Partial update data containing fields to change
+   * @param existingData - Existing transaction data
+   * @param dateField - The date field to use from existing data (e.g., 'date' or 'startDate')
+   * @returns Object with validation results, update data, and warnings
+   */
+  buildBasicUpdateData<TUpdates extends { amount?: number; category?: string; description?: string | null; type?: TransactionType }>(
+    updates: TUpdates,
+    existingData: { amount: number; category: string; type: string; [key: string]: any },
+    dateField: string = 'date'
+  ): {
+    isValid: boolean;
+    updateData?: any;
+    warnings: string[];
+    validationErrors?: string[];
+    originalCategory?: string;
+  } {
+    const originalCategory = updates.category;
+    const finalType = (updates.type || existingData.type) as TransactionType;
+
+    // Merge updates with existing data for validation
+    const mergedData = {
+      amount: updates.amount !== undefined ? updates.amount : existingData.amount,
+      category: updates.category !== undefined ? updates.category : existingData.category,
+      type: finalType,
+    };
+
+    // Validate all basic fields at once
+    const validationResult = this.validateBasicTransactionData(
+      mergedData.amount,
+      mergedData.category,
+      mergedData.type,
+      existingData[dateField]
+    );
+
+    if (!validationResult.isValid) {
+      return {
+        isValid: false,
+        warnings: [],
+        validationErrors: validationResult.validationErrors,
+      };
+    }
+
+    // Build update data only with fields that were actually provided
+    const updateData: any = {};
+
+    if (updates.amount !== undefined) {
+      updateData.amount = validationResult.amount;
+    }
+
+    if (updates.category !== undefined) {
+      updateData.category = validationResult.normalizedCategory;
+    }
+
+    if (updates.description !== undefined) {
+      updateData.description = updates.description || null;
+    }
+
+    if (updates.type !== undefined && updates.type !== existingData.type) {
+      updateData.type = updates.type;
+      // When type changes, category must be re-validated and normalized for the new type
+      updateData.category = validationResult.normalizedCategory;
+    }
+
+    return {
+      isValid: true,
+      updateData,
+      warnings: validationResult.warnings,
+      originalCategory,
+    };
   }
 
   /**

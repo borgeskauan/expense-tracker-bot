@@ -23,6 +23,7 @@ model Transaction {
   description String?
   type        String   @default("expense") // "expense" or "income"
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
   
   @@index([userId])
 }

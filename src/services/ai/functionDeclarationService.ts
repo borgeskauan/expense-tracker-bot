@@ -1,11 +1,11 @@
 import { Type } from "@google/genai";
-import { Transaction, RecurringTransactionInput } from "../../types/models";
+import { Transaction, RecurringTransactionInput, TransactionUpdateData, RecurringTransactionUpdateData } from "../../types/models";
 import { TransactionService } from "../business/transactionService";
 import { RecurringTransactionService } from "../business/recurringTransactionService";
 import { EXPENSE_CATEGORIES, getExpenseCategoryDescription } from "../../config/expenseCategories";
 import { INCOME_CATEGORIES, getIncomeCategoryDescription } from "../../config/incomeCategories";
 import { FREQUENCIES } from "../../config/frequencies";
-import { TransactionType } from "../../config/transactionTypes";
+import { TRANSACTION_TYPES, TransactionType } from "../../config/transactionTypes";
 
 // Shared property definitions
 const createTransactionProperties = (categories: readonly string[], categoryDescription: string) => ({
@@ -62,6 +62,68 @@ const createRecurringTransactionProperties = (categories: readonly string[], cat
   startDate: {
     type: Type.STRING,
     description: "The date when the recurring transaction starts in ISO format (YYYY-MM-DD). For relative dates like 'today', 'next Monday', calculate the actual date. You can call getCurrentDate() if needed. Defaults to today if not specified.",
+  },
+});
+
+// Update property definitions for editing
+const createTransactionUpdateProperties = () => ({
+  amount: {
+    type: Type.NUMBER,
+    description: "New amount (optional, only if user wants to change it). Must be positive.",
+  },
+  category: {
+    type: Type.STRING,
+    description: "New category (optional). If changing type, ensure category matches the new type (expense or income categories).",
+  },
+  description: {
+    type: Type.STRING,
+    description: "New description (optional). Can be empty string to remove description.",
+  },
+  date: {
+    type: Type.STRING,
+    description: "New date in ISO format YYYY-MM-DD (optional).",
+  },
+  type: {
+    type: Type.STRING,
+    description: "Change transaction type (optional, used rarely). If changed from expense to income or vice versa, the category must be valid for the new type.",
+    enum: [...TRANSACTION_TYPES],
+  },
+});
+
+const createRecurringTransactionUpdateProperties = () => ({
+  amount: {
+    type: Type.NUMBER,
+    description: "New amount (optional). Must be positive.",
+  },
+  category: {
+    type: Type.STRING,
+    description: "New category (optional). If changing type, ensure category matches the new type (expense or income categories).",
+  },
+  description: {
+    type: Type.STRING,
+    description: "New description (optional). Can be empty string to remove description.",
+  },
+  frequency: {
+    type: Type.STRING,
+    description: "New frequency (optional). Changing this will recalculate the next due date.",
+    enum: FREQUENCIES,
+  },
+  interval: {
+    type: Type.NUMBER,
+    description: "New interval (optional, e.g., 2 for 'every 2 weeks'). Must be at least 1. Changing this will recalculate the next due date.",
+  },
+  dayOfWeek: {
+    type: Type.NUMBER,
+    description: "For weekly frequency: Day of the week (0=Sunday through 6=Saturday). Changing this will recalculate the next due date.",
+  },
+  dayOfMonth: {
+    type: Type.NUMBER,
+    description: "For monthly frequency: Day of the month (1-31). Changing this will recalculate the next due date.",
+  },
+  type: {
+    type: Type.STRING,
+    description: "Change transaction type (optional, used rarely). If changed from expense to income or vice versa, the category must be valid for the new type.",
+    enum: [...TRANSACTION_TYPES],
   },
 });
 
@@ -143,6 +205,48 @@ const recurringIncomeDeclaration = {
   },
 };
 
+const editLastTransactionDeclaration = {
+  name: "editLastTransaction",
+  parameters: {
+    type: Type.OBJECT,
+    description: "Edit the most recently added transaction (expense or income). Use this when user wants to modify their last transaction - change amount, category, description, date, or type. This function returns a structured result with a 'success' field. On success (success=true), it includes updated transaction details with a message highlighting what changed. On failure (success=false), it includes validation errors. IMPORTANT: Always check the 'success' field. If no transactions exist, inform the user they need to add one first.",
+    properties: {
+      updates: {
+        type: Type.OBJECT,
+        description: "Fields to update - only include the fields the user wants to change",
+        properties: createTransactionUpdateProperties(),
+      },
+      transactionType: {
+        type: Type.STRING,
+        description: "Optional filter to specify whether to edit last expense or last income. Use when user explicitly says 'edit last expense' or 'edit last income'. If not specified, edits the most recent transaction of any type.",
+        enum: [...TRANSACTION_TYPES],
+      },
+    },
+    required: ["updates"],
+  },
+};
+
+const editLastRecurringTransactionDeclaration = {
+  name: "editLastRecurringTransaction",
+  parameters: {
+    type: Type.OBJECT,
+    description: "Edit the most recently added recurring transaction (expense or income). Use this when user wants to modify their last recurring/subscription transaction - change amount, category, description, frequency, interval, or type. This function returns a structured result with a 'success' field. On success (success=true), it includes updated recurring transaction details. On failure (success=false), it includes validation errors. IMPORTANT: Always check the 'success' field. If no recurring transactions exist, inform the user they need to create one first.",
+    properties: {
+      updates: {
+        type: Type.OBJECT,
+        description: "Fields to update - only include the fields the user wants to change",
+        properties: createRecurringTransactionUpdateProperties(),
+      },
+      transactionType: {
+        type: Type.STRING,
+        description: "Optional filter to specify whether to edit last recurring expense or last recurring income. Use when user explicitly says 'edit last recurring expense' or 'edit last recurring income'. If not specified, edits the most recent recurring transaction of any type.",
+        enum: [...TRANSACTION_TYPES],
+      },
+    },
+    required: ["updates"],
+  },
+};
+
 export class FunctionDeclarationService {
   private readonly transactionService: TransactionService;
   private readonly recurringTransactionService: RecurringTransactionService;
@@ -209,6 +313,22 @@ export class FunctionDeclarationService {
         });
       }
     ],
+    // Edit last transaction (async)
+    [
+      "editLastTransaction",
+      async (params: { updates: TransactionUpdateData, transactionType?: TransactionType }) => {
+        console.log("Executing editLastTransaction with params:", params);
+        return await this.transactionService.editLastTransaction(params.updates, params.transactionType);
+      }
+    ],
+    // Edit last recurring transaction (async)
+    [
+      "editLastRecurringTransaction",
+      async (params: { updates: RecurringTransactionUpdateData, transactionType?: TransactionType }) => {
+        console.log("Executing editLastRecurringTransaction with params:", params);
+        return await this.recurringTransactionService.editLastRecurringTransaction(params.updates, params.transactionType);
+      }
+    ],
   ]);
 
   private readonly functionDeclarations = [
@@ -216,10 +336,15 @@ export class FunctionDeclarationService {
     expenseDeclaration,
     incomeDeclaration,
     recurringExpenseDeclaration,
-    recurringIncomeDeclaration
+    recurringIncomeDeclaration,
+    editLastTransactionDeclaration,
+    editLastRecurringTransactionDeclaration
   ];
 
-  constructor(transactionService: TransactionService, recurringTransactionService: RecurringTransactionService) {
+  constructor(
+    transactionService: TransactionService, 
+    recurringTransactionService: RecurringTransactionService
+  ) {
     this.transactionService = transactionService;
     this.recurringTransactionService = recurringTransactionService;
   }

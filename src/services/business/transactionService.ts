@@ -1,4 +1,4 @@
-import { Transaction, TransactionResult, TransactionData } from '../../types/models';
+import { Transaction, TransactionResult, TransactionData, TransactionUpdateData } from '../../types/models';
 import { success, failure } from '../../types/ServiceResult';
 import { UserContextProvider } from '../../lib/UserContextProvider';
 import { BaseTransactionOperations } from '../../lib/BaseTransactionOperations';
@@ -6,16 +6,19 @@ import { PrismaClient } from '../../generated/prisma';
 import { MessageBuilder } from '../../lib/MessageBuilder';
 import { PrismaClientManager } from '../../lib/PrismaClientManager';
 import { TransactionType } from '../../config/transactionTypes';
+import { TransactionQueryService } from './transactionQueryService';
 
 export class TransactionService {
   private baseOps: BaseTransactionOperations;
   private prisma: PrismaClient;
   private messageBuilder: MessageBuilder;
+  private queryService: TransactionQueryService;
 
   constructor(userContext?: UserContextProvider) {
     this.baseOps = new BaseTransactionOperations(userContext);
     this.prisma = PrismaClientManager.getClient();
     this.messageBuilder = new MessageBuilder();
+    this.queryService = new TransactionQueryService(userContext);
   }
 
   /**
@@ -90,5 +93,159 @@ export class TransactionService {
     } catch (error) {
       return this.baseOps.handleDatabaseError(error, 'adding the transaction');
     }
+  }
+
+  /**
+   * Build update data object by validating all changes at once
+   * Delegates to base class for shared basic validation logic
+   */
+  private buildTransactionUpdateData(
+    updates: TransactionUpdateData,
+    existingTransaction: TransactionData
+  ): { result?: TransactionResult; updateData?: any; warnings: string[]; originalCategory?: string } {
+    // Use base class to handle basic fields validation and merging
+    const basicUpdateResult = this.baseOps.buildBasicUpdateData(updates, existingTransaction, 'date');
+
+    if (!basicUpdateResult.isValid) {
+      return {
+        result: failure(
+          'Validation failed',
+          'VALIDATION_ERROR',
+          basicUpdateResult.validationErrors?.join('; '),
+          basicUpdateResult.validationErrors
+        ),
+        warnings: [],
+      };
+    }
+
+    // Handle date field (transaction-specific)
+    if (updates.date !== undefined) {
+      const dateValidation = this.baseOps.validateBasicTransactionData(
+        updates.amount || existingTransaction.amount,
+        updates.category || existingTransaction.category,
+        (updates.type || existingTransaction.type) as TransactionType,
+        updates.date
+      );
+
+      if (!dateValidation.isValid) {
+        return {
+          result: failure(
+            'Validation failed',
+            'VALIDATION_ERROR',
+            dateValidation.validationErrors?.join('; '),
+            dateValidation.validationErrors
+          ),
+          warnings: [],
+        };
+      }
+
+      basicUpdateResult.updateData!.date = dateValidation.normalizedDate;
+    }
+
+    return {
+      updateData: basicUpdateResult.updateData,
+      warnings: basicUpdateResult.warnings,
+      originalCategory: basicUpdateResult.originalCategory,
+    };
+  }
+
+  /**
+   * Update an existing transaction
+   * @param id - Transaction ID to update
+   * @param updates - Partial transaction data to update
+   * @param existingTransaction - The existing transaction data (already validated for ownership)
+   * @returns ServiceResult with updated transaction
+   */
+  async updateTransaction(
+    id: number,
+    updates: TransactionUpdateData,
+    existingTransaction: TransactionData
+  ): Promise<TransactionResult> {
+    try {
+      // Build and validate update data
+      const buildResult = this.buildTransactionUpdateData(updates, existingTransaction);
+      
+      if (buildResult.result) {
+        return buildResult.result; // Validation error
+      }
+
+      const { updateData, warnings: validationWarnings, originalCategory } = buildResult;
+
+      // Perform the update
+      const updatedTransaction = await this.prisma.transaction.update({
+        where: { id },
+        data: updateData,
+      });
+
+      console.log(`Transaction updated: ID ${id}, changes:`, updateData);
+
+      // Build success message
+      const message = this.messageBuilder.buildTransactionUpdatedMessage(
+        existingTransaction,
+        {
+          id: updatedTransaction.id,
+          amount: updatedTransaction.amount,
+          category: updatedTransaction.category,
+          description: updatedTransaction.description,
+          date: updatedTransaction.date.toISOString().split('T')[0],
+          type: updatedTransaction.type as TransactionType,
+        },
+        {
+          category: updateData!.category,
+          wasNormalized: validationWarnings.length > 0,
+          originalCategory: validationWarnings.length > 0 ? originalCategory : undefined,
+        }
+      );
+
+      return success(
+        {
+          id: updatedTransaction.id,
+          amount: updatedTransaction.amount,
+          category: updatedTransaction.category,
+          description: updatedTransaction.description,
+          date: updatedTransaction.date.toISOString().split('T')[0],
+          type: updatedTransaction.type as TransactionType,
+        },
+        message,
+        validationWarnings.length > 0 ? validationWarnings : undefined
+      );
+    } catch (error) {
+      return this.baseOps.handleDatabaseError(error, 'updating the transaction');
+    }
+  }
+
+  /**
+   * Edit the last transaction for the current user
+   * High-level method that queries and updates in one call
+   * @param updates - Fields to update
+   * @param transactionType - Optional type filter (expense or income)
+   * @returns ServiceResult with updated transaction
+   */
+  async editLastTransaction(
+    updates: TransactionUpdateData,
+    transactionType?: TransactionType
+  ): Promise<TransactionResult> {
+    // Get userId from injected context (same pattern as injectUserId)
+    const userIdObj: { userId?: string } = {};
+    this.baseOps.injectUserId(userIdObj);
+    const userId = userIdObj.userId || '';
+    
+    if (!userId) {
+      return failure(
+        'User context not available',
+        'MISSING_CONTEXT',
+        'Unable to identify user for transaction lookup'
+      );
+    }
+
+    // Query for last transaction
+    const lastTxResult = await this.queryService.getLastTransactionByUser(userId, transactionType);
+    
+    if (!lastTxResult.success) {
+      return lastTxResult;
+    }
+
+    // Update the transaction (passing existing data to avoid redundant query)
+    return await this.updateTransaction(lastTxResult.data!.id, updates, lastTxResult.data!);
   }
 }
