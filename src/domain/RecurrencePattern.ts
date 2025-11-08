@@ -3,6 +3,7 @@ import {
   isValidFrequency,
   isValidDayOfWeek,
   isValidDayOfMonth,
+  isValidMonthOfYear,
   calculateNextDueDate,
   getFrequencyDescription,
 } from '../config/frequencies';
@@ -17,17 +18,20 @@ export class RecurrencePattern {
   readonly interval: number;
   readonly dayOfWeek?: number;
   readonly dayOfMonth?: number;
+  readonly monthOfYear?: number;
 
   private constructor(
     frequency: Frequency,
     interval: number,
     dayOfWeek?: number,
-    dayOfMonth?: number
+    dayOfMonth?: number,
+    monthOfYear?: number
   ) {
     this.frequency = frequency;
     this.interval = interval;
     this.dayOfWeek = dayOfWeek;
     this.dayOfMonth = dayOfMonth;
+    this.monthOfYear = monthOfYear;
   }
 
   /**
@@ -38,6 +42,7 @@ export class RecurrencePattern {
    * @param interval - The interval (default: 1)
    * @param dayOfWeek - Day of week for weekly recurrence (0-6)
    * @param dayOfMonth - Day of month for monthly recurrence (1-31)
+   * @param monthOfYear - Month of year for yearly recurrence (0-11)
    * @returns New RecurrencePattern instance
    * @throws Error if validation fails
    */
@@ -46,7 +51,8 @@ export class RecurrencePattern {
     startDate: Date,
     interval?: number,
     dayOfWeek?: number,
-    dayOfMonth?: number
+    dayOfMonth?: number,
+    monthOfYear?: number
   ): RecurrencePattern {
     // Validate frequency
     if (!isValidFrequency(frequency)) {
@@ -63,6 +69,7 @@ export class RecurrencePattern {
 
     let validDayOfWeek: number | undefined = dayOfWeek;
     let validDayOfMonth: number | undefined = dayOfMonth;
+    let validMonthOfYear: number | undefined = monthOfYear;
 
     // Validate and apply defaults for frequency-specific fields
     if (frequency === 'weekly') {
@@ -91,11 +98,25 @@ export class RecurrencePattern {
       }
     }
 
+    if (frequency === 'yearly') {
+      // Default monthOfYear to the month of startDate if not provided
+      if (validMonthOfYear === undefined) {
+        validMonthOfYear = startDate.getMonth(); // 0-11 (January-December)
+        console.log(
+          `monthOfYear not provided for yearly frequency, defaulting to ${validMonthOfYear} (${startDate.toLocaleDateString('en-US', { month: 'long' })})`
+        );
+      }
+      if (!isValidMonthOfYear(validMonthOfYear)) {
+        throw new Error('monthOfYear must be between 0 (January) and 11 (December)');
+      }
+    }
+
     return new RecurrencePattern(
       frequency,
       validInterval,
       validDayOfWeek,
-      validDayOfMonth
+      validDayOfMonth,
+      validMonthOfYear
     );
   }
 
@@ -111,7 +132,8 @@ export class RecurrencePattern {
       this.frequency,
       this.interval,
       this.dayOfWeek,
-      this.dayOfMonth
+      this.dayOfMonth,
+      this.monthOfYear
     );
   }
 
@@ -125,7 +147,8 @@ export class RecurrencePattern {
       this.frequency,
       this.interval,
       this.dayOfWeek,
-      this.dayOfMonth
+      this.dayOfMonth,
+      this.monthOfYear
     );
   }
 
@@ -137,12 +160,14 @@ export class RecurrencePattern {
     interval: number;
     dayOfWeek: number | null;
     dayOfMonth: number | null;
+    monthOfYear: number | null;
   } {
     return {
       frequency: this.frequency,
       interval: this.interval,
       dayOfWeek: this.dayOfWeek ?? null,
       dayOfMonth: this.dayOfMonth ?? null,
+      monthOfYear: this.monthOfYear ?? null,
     };
   }
 
@@ -154,6 +179,7 @@ export class RecurrencePattern {
     interval: number;
     dayOfWeek: number | null;
     dayOfMonth: number | null;
+    monthOfYear: number | null;
   }): RecurrencePattern {
     if (!isValidFrequency(data.frequency)) {
       throw new Error(`Invalid frequency in data: ${data.frequency}`);
@@ -163,7 +189,8 @@ export class RecurrencePattern {
       data.frequency as Frequency,
       data.interval,
       data.dayOfWeek ?? undefined,
-      data.dayOfMonth ?? undefined
+      data.dayOfMonth ?? undefined,
+      data.monthOfYear ?? undefined
     );
   }
 }

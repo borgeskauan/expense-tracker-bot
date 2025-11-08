@@ -35,7 +35,8 @@ export class RecurringTransactionService {
     type: TransactionType,
     interval?: number | null,
     dayOfWeek?: number | null,
-    dayOfMonth?: number | null
+    dayOfMonth?: number | null,
+    monthOfYear?: number | null
   ): { isValid: boolean; recurrencePattern?: any; nextDue?: Date; errors?: string[] } {
     // Validate the recurrence pattern
     const recurrenceValidation = this.validator.validate(
@@ -45,7 +46,8 @@ export class RecurringTransactionService {
       type,
       interval,
       dayOfWeek,
-      dayOfMonth
+      dayOfMonth,
+      monthOfYear
     );
 
     if (!recurrenceValidation.isValid || !recurrenceValidation.recurrencePattern) {
@@ -104,7 +106,8 @@ export class RecurringTransactionService {
       data.type,
       data.interval,
       data.dayOfWeek,
-      data.dayOfMonth
+      data.dayOfMonth,
+      data.monthOfYear
     );
 
     if (!recurrenceValidation.isValid) {
@@ -134,6 +137,7 @@ export class RecurringTransactionService {
           interval: patternData.interval,
           dayOfWeek: patternData.dayOfWeek,
           dayOfMonth: patternData.dayOfMonth,
+          monthOfYear: patternData.monthOfYear,
           startDate: startDate,
           nextDue: nextDue,
           isActive: true,
@@ -165,6 +169,7 @@ export class RecurringTransactionService {
           interval: recurringTransaction.interval,
           dayOfWeek: recurringTransaction.dayOfWeek,
           dayOfMonth: recurringTransaction.dayOfMonth,
+          monthOfYear: recurringTransaction.monthOfYear,
           nextDue: recurringTransaction.nextDue.toISOString().split('T')[0],
           startDate: recurringTransaction.startDate.toISOString().split('T')[0],
           type: recurringTransaction.type as TransactionType
@@ -207,9 +212,10 @@ export class RecurringTransactionService {
     // Merge basic update data
     Object.assign(updateData, basicUpdateResult.updateData);
 
-    // Handle recurrence-specific fields (frequency, interval, dayOfWeek, dayOfMonth)
+    // Handle recurrence-specific fields (frequency, interval, dayOfWeek, dayOfMonth, monthOfYear)
     if (updates.frequency !== undefined || updates.interval !== undefined || 
-        updates.dayOfWeek !== undefined || updates.dayOfMonth !== undefined) {
+        updates.dayOfWeek !== undefined || updates.dayOfMonth !== undefined ||
+        updates.monthOfYear !== undefined) {
       
       needsRecalculation = true;
       
@@ -218,6 +224,7 @@ export class RecurringTransactionService {
       const interval = updates.interval !== undefined ? updates.interval : existingData.interval;
       const dayOfWeek = updates.dayOfWeek !== undefined ? updates.dayOfWeek : existingData.dayOfWeek;
       const dayOfMonth = updates.dayOfMonth !== undefined ? updates.dayOfMonth : existingData.dayOfMonth;
+      const monthOfYear = updates.monthOfYear !== undefined ? updates.monthOfYear : existingData.monthOfYear;
       
       // Validate the new recurrence pattern (validator handles null conversion)
       const startDate = new Date(existingData.startDate);
@@ -231,7 +238,8 @@ export class RecurringTransactionService {
         finalType,
         interval,
         dayOfWeek,
-        dayOfMonth
+        dayOfMonth,
+        monthOfYear
       );
 
       if (!recurrenceValidation.isValid) {
@@ -251,6 +259,7 @@ export class RecurringTransactionService {
       updateData.interval = interval !== null ? interval : undefined;
       updateData.dayOfWeek = dayOfWeek !== null ? dayOfWeek : undefined;
       updateData.dayOfMonth = dayOfMonth !== null ? dayOfMonth : undefined;
+      updateData.monthOfYear = monthOfYear !== null ? monthOfYear : undefined;
       updateData.nextDue = recurrenceValidation.nextDue;
     }
 
@@ -306,6 +315,7 @@ export class RecurringTransactionService {
           interval: updatedRecurringTransaction.interval,
           dayOfWeek: updatedRecurringTransaction.dayOfWeek,
           dayOfMonth: updatedRecurringTransaction.dayOfMonth,
+          monthOfYear: updatedRecurringTransaction.monthOfYear,
           nextDue: updatedRecurringTransaction.nextDue.toISOString().split('T')[0],
           startDate: updatedRecurringTransaction.startDate.toISOString().split('T')[0],
           type: updatedRecurringTransaction.type as TransactionType,

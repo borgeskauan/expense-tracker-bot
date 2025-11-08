@@ -27,6 +27,13 @@ export function isValidDayOfMonth(day: number): boolean {
 }
 
 /**
+ * Validate month of year (0-11, January-December)
+ */
+export function isValidMonthOfYear(month: number): boolean {
+  return Number.isInteger(month) && month >= 0 && month <= 11;
+}
+
+/**
  * Calculate next due date based on start date and recurrence pattern
  */
 export function calculateNextDueDate(
@@ -34,7 +41,8 @@ export function calculateNextDueDate(
   frequency: Frequency,
   interval: number = 1,
   dayOfWeek?: number,
-  dayOfMonth?: number
+  dayOfMonth?: number,
+  monthOfYear?: number
 ): Date {
   const nextDue = new Date(startDate);
   
@@ -85,7 +93,29 @@ export function calculateNextDueDate(
       break;
       
     case "yearly":
-      nextDue.setFullYear(nextDue.getFullYear() + interval);
+      if (monthOfYear !== undefined) {
+        if (!isValidMonthOfYear(monthOfYear)) {
+          throw new Error("monthOfYear must be between 0 (January) and 11 (December)");
+        }
+        
+        // Move to next year first
+        nextDue.setFullYear(nextDue.getFullYear() + interval);
+        
+        // Set the target month
+        nextDue.setMonth(monthOfYear);
+        
+        // Handle day-of-month edge cases (e.g., Feb 30 -> Feb 28/29)
+        const targetMonth = nextDue.getMonth();
+        const currentDay = nextDue.getDate();
+        const daysInTargetMonth = getDaysInMonth(nextDue.getFullYear(), targetMonth);
+        
+        if (currentDay > daysInTargetMonth) {
+          nextDue.setDate(daysInTargetMonth);
+        }
+      } else {
+        // No month specified, just add years
+        nextDue.setFullYear(nextDue.getFullYear() + interval);
+      }
       break;
       
     default:
@@ -109,9 +139,12 @@ export function getFrequencyDescription(
   frequency: Frequency,
   interval: number = 1,
   dayOfWeek?: number,
-  dayOfMonth?: number
+  dayOfMonth?: number,
+  monthOfYear?: number
 ): string {
   const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const monthNames = ["January", "February", "March", "April", "May", "June", 
+                      "July", "August", "September", "October", "November", "December"];
   
   switch (frequency) {
     case "daily":
@@ -130,6 +163,12 @@ export function getFrequencyDescription(
         : `every ${interval} months on the ${ordinal}`;
       
     case "yearly":
+      if (monthOfYear !== undefined) {
+        const monthName = monthNames[monthOfYear];
+        return interval === 1 
+          ? `yearly in ${monthName}` 
+          : `every ${interval} years in ${monthName}`;
+      }
       return interval === 1 ? "yearly" : `every ${interval} years`;
       
     default:

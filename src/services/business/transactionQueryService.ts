@@ -99,6 +99,7 @@ export class TransactionQueryService {
           interval: recurringTransaction.interval,
           dayOfWeek: recurringTransaction.dayOfWeek,
           dayOfMonth: recurringTransaction.dayOfMonth,
+          monthOfYear: recurringTransaction.monthOfYear,
           nextDue: recurringTransaction.nextDue.toISOString().split('T')[0],
           startDate: recurringTransaction.startDate.toISOString().split('T')[0],
           type: recurringTransaction.type as TransactionType,

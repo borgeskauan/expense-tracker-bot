@@ -60,6 +60,10 @@ const createRecurringTransactionProperties = (categories: readonly string[], cat
     type: Type.NUMBER,
     description: "For monthly frequency only: The day of the month (1-31). Required for monthly frequency. Defaults to the day of the month of the startDate if not specified.",
   },
+  monthOfYear: {
+    type: Type.NUMBER,
+    description: "For yearly frequency only: The month of the year (0=January, 1=February, ..., 11=December). Required for yearly frequency. Defaults to the month of the startDate if not specified.",
+  },
   startDate: {
     type: Type.STRING,
     description: "The date when the recurring transaction starts in ISO format (YYYY-MM-DD). For relative dates like 'today', 'next Monday', calculate the actual date. You can call getCurrentDate() if needed. Defaults to today if not specified.",
@@ -120,6 +124,10 @@ const createRecurringTransactionUpdateProperties = () => ({
   dayOfMonth: {
     type: Type.NUMBER,
     description: "For monthly frequency: Day of the month (1-31). Changing this will recalculate the next due date.",
+  },
+  monthOfYear: {
+    type: Type.NUMBER,
+    description: "For yearly frequency: Month of the year (0=January through 11=December). Changing this will recalculate the next due date.",
   },
   type: {
     type: Type.STRING,
@@ -264,7 +272,7 @@ const generateReportDeclaration = {
     
     Database Schema:
     - "Transaction" table columns: id (INTEGER), userId (TEXT), date (TEXT), amount (REAL), category (TEXT), description (TEXT), type (TEXT: 'expense' or 'income'), createdAt (TEXT), updatedAt (TEXT)
-    - "RecurringTransaction" table columns: id (INTEGER), userId (TEXT), amount (REAL), category (TEXT), description (TEXT), type (TEXT: 'expense' or 'income'), frequency (TEXT), interval (INTEGER), dayOfWeek (INTEGER), dayOfMonth (INTEGER), startDate (TEXT), nextDue (TEXT), isActive (INTEGER: 0 or 1), createdAt (TEXT), updatedAt (TEXT)
+    - "RecurringTransaction" table columns: id (INTEGER), userId (TEXT), amount (REAL), category (TEXT), description (TEXT), type (TEXT: 'expense' or 'income'), frequency (TEXT), interval (INTEGER), dayOfWeek (INTEGER), dayOfMonth (INTEGER), monthOfYear (INTEGER), startDate (TEXT), nextDue (TEXT), isActive (INTEGER: 0 or 1), createdAt (TEXT), updatedAt (TEXT)
     
     CRITICAL SQL RULES:
     1. Always include WHERE userId = '{USER_ID_PLACEHOLDER}' (system will inject actual userId)

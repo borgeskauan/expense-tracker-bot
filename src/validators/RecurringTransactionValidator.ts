@@ -35,6 +35,7 @@ export class RecurringTransactionValidator {
    * @param interval - The interval
    * @param dayOfWeek - Day of week for weekly
    * @param dayOfMonth - Day of month for monthly
+   * @param monthOfYear - Month of year for yearly
    * @returns RecurrencePattern if valid
    * @throws Error if validation fails
    */
@@ -43,14 +44,16 @@ export class RecurringTransactionValidator {
     startDate: Date,
     interval?: number,
     dayOfWeek?: number,
-    dayOfMonth?: number
+    dayOfMonth?: number,
+    monthOfYear?: number
   ): RecurrencePattern {
     return RecurrencePattern.create(
       frequency,
       startDate,
       interval,
       dayOfWeek,
-      dayOfMonth
+      dayOfMonth,
+      monthOfYear
     );
   }
 
@@ -64,6 +67,7 @@ export class RecurringTransactionValidator {
    * @param interval - The interval (accepts null and converts to undefined)
    * @param dayOfWeek - Day of week for weekly (accepts null and converts to undefined)
    * @param dayOfMonth - Day of month for monthly (accepts null and converts to undefined)
+   * @param monthOfYear - Month of year for yearly (accepts null and converts to undefined)
    * @returns Validation result with RecurrencePattern if valid
    */
   validate(
@@ -73,7 +77,8 @@ export class RecurringTransactionValidator {
     type: TransactionType,
     interval?: number | null,
     dayOfWeek?: number | null,
-    dayOfMonth?: number | null
+    dayOfMonth?: number | null,
+    monthOfYear?: number | null
   ): {
     isValid: boolean;
     errors: string[];
@@ -93,6 +98,7 @@ export class RecurringTransactionValidator {
     const normalizedInterval = interval !== null ? interval : undefined;
     const normalizedDayOfWeek = dayOfWeek !== null ? dayOfWeek : undefined;
     const normalizedDayOfMonth = dayOfMonth !== null ? dayOfMonth : undefined;
+    const normalizedMonthOfYear = monthOfYear !== null ? monthOfYear : undefined;
 
     // Validate and create recurrence pattern
     let recurrencePattern: RecurrencePattern | undefined;
@@ -102,7 +108,8 @@ export class RecurringTransactionValidator {
         startDate,
         normalizedInterval,
         normalizedDayOfWeek,
-        normalizedDayOfMonth
+        normalizedDayOfMonth,
+        normalizedMonthOfYear
       );
     } catch (error) {
       errors.push(error instanceof Error ? error.message : 'Invalid recurrence pattern');

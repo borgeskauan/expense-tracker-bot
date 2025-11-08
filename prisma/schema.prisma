@@ -41,6 +41,7 @@ model RecurringTransaction {
   interval    Int      @default(1) // Every X units
   dayOfWeek   Int?     // For weekly: 0-6 (Sunday-Saturday)
   dayOfMonth  Int?     // For monthly: 1-31
+  monthOfYear Int?     // For yearly: 0-11 (January-December)
   
   // Lifecycle dates
   startDate   DateTime
