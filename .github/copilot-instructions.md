@@ -93,6 +93,8 @@ Defined in `src/services/functionDeclarationService.ts`:
 - `editTransactionById(id, updates)`: Edits a specific transaction by its ID
 - `editRecurringTransactionById(id, updates)`: Edits a specific recurring transaction by its ID
 - `queryTransactions(queryDescription, sqlQuery)`: Queries transaction data for reports, finding transactions to edit, or finding transactions to delete
+- `deleteTransactions(ids)`: Permanently deletes one or multiple transactions by their IDs
+- `deleteRecurringTransactions(ids)`: Deactivates one or multiple recurring transactions by their IDs
 
 **CRITICAL - Unified Functions Pattern**: 
 - Single `addTransaction` function handles both expenses and income via `type` field
@@ -105,7 +107,14 @@ Defined in `src/services/functionDeclarationService.ts`:
 - When finding transactions for editing/deleting, query must include `id` column in SELECT
 - Query the "Transaction" table for one-time transactions
 - Query the "RecurringTransaction" table for recurring transactions (subscriptions, bills, recurring income)
-- Results include transaction IDs that can be used with `editTransactionById`, `editRecurringTransactionById`, or future delete functions
+- Results include transaction IDs that can be used with `editTransactionById`, `editRecurringTransactionById`, `deleteTransactions`, or `deleteRecurringTransactions`
+
+**Delete Operations**:
+- `deleteTransactions` permanently removes one-time transactions (hard delete)
+- `deleteRecurringTransactions` deactivates recurring transactions (soft delete via isActive flag)
+- Both functions support batch operations (multiple IDs in array)
+- All-or-nothing approach: if any ID fails validation, entire operation fails
+- Use queryTransactions to discover transaction IDs before deleting
 
 **Transaction Types**: Enum in `src/config/transactionTypes.ts`:
 - `TRANSACTION_TYPES = ['expense', 'income']`

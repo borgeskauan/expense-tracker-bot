@@ -425,6 +425,82 @@ const queryTransactionsDeclaration = {
   },
 };
 
+const deleteTransactionsDeclaration = {
+  name: "deleteTransactions",
+  parameters: {
+    type: Type.OBJECT,
+    description: `Delete one or multiple one-time transactions by their IDs. Use this when the user wants to permanently remove specific transactions they previously identified via queryTransactions.
+    
+    WORKFLOW:
+    1. User asks to delete specific transaction(s) (e.g., "Delete that $50 coffee expense", "Delete all those duplicate entries")
+    2. Use queryTransactions on "Transaction" table to find matching transactions (including 'id' column in SELECT)
+    3. Present the matches to the user with their IDs clearly visible
+    4. IMPORTANT: Warn user this is permanent deletion and cannot be undone
+    5. Once user confirms which transaction(s) to delete, call this function with the ID(s)
+    
+    This function returns a structured result with a 'success' field.
+    
+    On SUCCESS (success=true):
+    - Returns deletedCount (number of transactions deleted)
+    - Returns human-readable message (e.g., "Deleted 3 transactions")
+    
+    On FAILURE (success=false):
+    - Returns error message (e.g., "Transactions not found or unauthorized: 123, 456")
+    - Lists specific IDs that failed (not found or unauthorized)
+    - No partial deletions - all or nothing (transaction safety)`,
+    properties: {
+      ids: {
+        type: Type.ARRAY,
+        description: "Array of transaction IDs to delete (obtained from queryTransactions results on Transaction table). Can be single ID [123] or multiple [123, 456, 789]",
+        items: {
+          type: Type.NUMBER,
+          description: "Transaction ID"
+        }
+      }
+    },
+    required: ["ids"]
+  }
+};
+
+const deleteRecurringTransactionsDeclaration = {
+  name: "deleteRecurringTransactions",
+  parameters: {
+    type: Type.OBJECT,
+    description: `Delete (deactivate) one or multiple recurring transactions by their IDs. Use this when the user wants to stop/cancel specific recurring transactions (subscriptions, bills, etc.) they previously identified via queryTransactions.
+    
+    WORKFLOW:
+    1. User asks to delete recurring transaction(s) (e.g., "Cancel my Netflix subscription", "Delete those old recurring bills")
+    2. Use queryTransactions on "RecurringTransaction" table to find matching recurring transactions (including 'id' column in SELECT)
+    3. Present the matches to the user with their IDs clearly visible (show frequency/amount for context)
+    4. Explain this will deactivate the recurring transaction (no future occurrences)
+    5. Once user confirms which recurring transaction(s) to delete, call this function with the ID(s)
+    
+    IMPORTANT: This DEACTIVATES recurring transactions (soft delete). They won't appear in active lists but are preserved for history.
+    
+    This function returns a structured result with a 'success' field.
+    
+    On SUCCESS (success=true):
+    - Returns deactivatedCount (number of recurring transactions deactivated)
+    - Returns human-readable message (e.g., "Deactivated 2 subscriptions")
+    
+    On FAILURE (success=false):
+    - Returns error message (e.g., "Recurring transactions not found, unauthorized, or already inactive: 45, 67")
+    - Lists specific IDs that failed (not found, unauthorized, or already inactive)
+    - No partial deletions - all or nothing (transaction safety)`,
+    properties: {
+      ids: {
+        type: Type.ARRAY,
+        description: "Array of recurring transaction IDs to delete (obtained from queryTransactions results on RecurringTransaction table). Can be single ID [12] or multiple [12, 34, 56]",
+        items: {
+          type: Type.NUMBER,
+          description: "Recurring transaction ID"
+        }
+      }
+    },
+    required: ["ids"]
+  }
+};
+
 export class FunctionDeclarationService {
   private readonly transactionService: TransactionService;
   private readonly recurringTransactionService: RecurringTransactionService;
@@ -496,6 +572,22 @@ export class FunctionDeclarationService {
         return await this.recurringTransactionService.editRecurringTransactionById(params.id, params.updates);
       }
     ],
+    // Delete transactions (async)
+    [
+      "deleteTransactions",
+      async (params: { ids: number[] }) => {
+        console.log("Executing deleteTransactions with params:", params);
+        return await this.transactionService.deleteTransactions(params.ids);
+      }
+    ],
+    // Delete recurring transactions (async)
+    [
+      "deleteRecurringTransactions",
+      async (params: { ids: number[] }) => {
+        console.log("Executing deleteRecurringTransactions with params:", params);
+        return await this.recurringTransactionService.deleteRecurringTransactions(params.ids);
+      }
+    ],
     // Query transactions for reports, editing, or deleting (async)
     [
       "queryTransactions",
@@ -517,7 +609,9 @@ export class FunctionDeclarationService {
     editLastRecurringTransactionDeclaration,
     editTransactionByIdDeclaration,
     editRecurringTransactionByIdDeclaration,
-    queryTransactionsDeclaration
+    queryTransactionsDeclaration,
+    deleteTransactionsDeclaration,
+    deleteRecurringTransactionsDeclaration
   ];
 
   constructor(

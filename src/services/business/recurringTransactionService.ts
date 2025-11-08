@@ -1,5 +1,5 @@
 import { RecurringTransactionInput, RecurringTransactionResult, RecurringTransactionData, RecurringTransactionUpdateData } from '../../types/models';
-import { success, failure } from '../../types/ServiceResult';
+import { success, failure, ServiceResult } from '../../types/ServiceResult';
 import { UserContextProvider } from '../../lib/UserContextProvider';
 import { RecurringTransactionValidator } from '../../validators/RecurringTransactionValidator';
 import { BaseTransactionOperations } from '../../lib/BaseTransactionOperations';
@@ -395,5 +395,86 @@ export class RecurringTransactionService {
 
     // Update the recurring transaction (passing existing data to avoid redundant query)
     return await this.updateRecurringTransaction(id, updates, recurringTxResult.data!);
+  }
+
+  /**
+   * Delete (deactivate) one or multiple recurring transactions by IDs
+   * @param ids - Array of recurring transaction IDs to delete
+   * @returns ServiceResult with count of deactivated recurring transactions
+   */
+  async deleteRecurringTransactions(
+    ids: number[]
+  ): Promise<ServiceResult<{ deactivatedCount: number }>> {
+    // Validate IDs array
+    if (!ids || ids.length === 0) {
+      return failure(
+        'No recurring transaction IDs provided',
+        'VALIDATION_ERROR',
+        'Please provide at least one recurring transaction ID to delete.'
+      );
+    }
+
+    // Get userId from injected context
+    const userIdObj: { userId?: string } = {};
+    this.baseOps.injectUserId(userIdObj);
+    const userId = userIdObj.userId || '';
+    
+    if (!userId) {
+      return failure(
+        'User context not available',
+        'MISSING_CONTEXT',
+        'Unable to identify user for recurring transaction deletion'
+      );
+    }
+
+    try {
+      // Step 1: Fetch all recurring transactions matching IDs, userId, and active status
+      const recurringTransactions = await this.prisma.recurringTransaction.findMany({
+        where: {
+          id: { in: ids },
+          userId,
+          isActive: true
+        },
+        select: { id: true }
+      });
+
+      // Step 2: Check if all requested IDs were found
+      const foundIds = recurringTransactions.map(rt => rt.id);
+      const missingIds = ids.filter(id => !foundIds.includes(id));
+
+      // Step 3: If any missing, return failure (all-or-nothing)
+      if (missingIds.length > 0) {
+        return failure(
+          `Recurring transactions not found, unauthorized, or already inactive: ${missingIds.join(', ')}`,
+          'NOT_FOUND',
+          'Some recurring transactions do not exist, are already inactive, or you do not have access to them.'
+        );
+      }
+
+      // Step 4: Soft delete - set isActive = false (ownership already validated)
+      const result = await this.prisma.recurringTransaction.updateMany({
+        where: {
+          id: { in: ids },
+          userId // Extra safety
+        },
+        data: {
+          isActive: false
+        }
+      });
+
+      console.log(`Deactivated ${result.count} recurring transaction(s) for user ${userId}`);
+
+      // Build success message
+      const message = result.count === 1 
+        ? 'Deactivated 1 recurring transaction'
+        : `Deactivated ${result.count} recurring transactions`;
+
+      return success(
+        { deactivatedCount: result.count },
+        message
+      );
+    } catch (error) {
+      return this.baseOps.handleDatabaseError(error, 'deleting recurring transaction(s)');
+    }
   }
 }

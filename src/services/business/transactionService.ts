@@ -1,5 +1,5 @@
 import { Transaction, TransactionResult, TransactionData, TransactionUpdateData } from '../../types/models';
-import { success, failure } from '../../types/ServiceResult';
+import { success, failure, ServiceResult } from '../../types/ServiceResult';
 import { UserContextProvider } from '../../lib/UserContextProvider';
 import { BaseTransactionOperations } from '../../lib/BaseTransactionOperations';
 import { PrismaClient } from '../../generated/prisma';
@@ -281,5 +281,82 @@ export class TransactionService {
 
     // Update the transaction (passing existing data to avoid redundant query)
     return await this.updateTransaction(id, updates, transactionResult.data!);
+  }
+
+  /**
+   * Delete one or multiple transactions by IDs
+   * @param ids - Array of transaction IDs to delete
+   * @returns ServiceResult with count of deleted transactions
+   */
+  async deleteTransactions(
+    ids: number[]
+  ): Promise<ServiceResult<{ deletedCount: number }>> {
+    // Validate IDs array
+    if (!ids || ids.length === 0) {
+      return failure(
+        'No transaction IDs provided',
+        'VALIDATION_ERROR',
+        'Please provide at least one transaction ID to delete.'
+      );
+    }
+
+    // Get userId from injected context
+    const userIdObj: { userId?: string } = {};
+    this.baseOps.injectUserId(userIdObj);
+    const userId = userIdObj.userId || '';
+    
+    if (!userId) {
+      return failure(
+        'User context not available',
+        'MISSING_CONTEXT',
+        'Unable to identify user for transaction deletion'
+      );
+    }
+
+    try {
+      // Step 1: Fetch all transactions matching IDs and userId
+      const transactions = await this.prisma.transaction.findMany({
+        where: {
+          id: { in: ids },
+          userId
+        },
+        select: { id: true }
+      });
+
+      // Step 2: Check if all requested IDs were found
+      const foundIds = transactions.map(t => t.id);
+      const missingIds = ids.filter(id => !foundIds.includes(id));
+
+      // Step 3: If any missing, return failure (all-or-nothing)
+      if (missingIds.length > 0) {
+        return failure(
+          `Transactions not found or unauthorized: ${missingIds.join(', ')}`,
+          'NOT_FOUND',
+          'Some transactions do not exist or you do not have access to them.'
+        );
+      }
+
+      // Step 4: Delete all transactions (ownership already validated)
+      const result = await this.prisma.transaction.deleteMany({
+        where: {
+          id: { in: ids },
+          userId // Extra safety
+        }
+      });
+
+      console.log(`Deleted ${result.count} transaction(s) for user ${userId}`);
+
+      // Build success message
+      const message = result.count === 1 
+        ? 'Deleted 1 transaction'
+        : `Deleted ${result.count} transactions`;
+
+      return success(
+        { deletedCount: result.count },
+        message
+      );
+    } catch (error) {
+      return this.baseOps.handleDatabaseError(error, 'deleting transaction(s)');
+    }
   }
 }
