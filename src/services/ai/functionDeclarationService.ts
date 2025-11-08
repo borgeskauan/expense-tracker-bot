@@ -227,30 +227,7 @@ const editTransactionByIdDeclaration = {
   name: "editTransactionById",
   parameters: {
     type: Type.OBJECT,
-    description: `Edit a specific transaction by its ID. Use this when the user wants to edit a transaction.
-    
-    WORKFLOW:
-    1. User asks to edit a transaction (e.g., "Edit that $50 coffee expense", "Change my last coffee to $6")
-    2. Use queryTransactions to find matching transactions (including 'id' column in SELECT)
-    3. DECISION POINT based on number of matches:
-       - If EXACTLY 1 match found: Immediately call this function with the ID and updates (no confirmation needed)
-       - If 2+ matches found: Present options to user, wait for them to choose, then call this function
-       - If 0 matches found: Inform user no matching transactions were found
-    
-    NOTE: The "immediate edit" behavior (when exactly 1 match) reduces back-and-forth and provides 
-    a faster user experience. Only ask for confirmation when there's ambiguity (2+ matches).
-    
-    This function returns a structured result with a 'success' field.
-    
-    On SUCCESS (success=true):
-    - Returns updated transaction data (id, amount, category, description, date, type)
-    - Returns human-readable message confirming the changes
-    - May include warnings if category was normalized
-    
-    On FAILURE (success=false):
-    - Returns error message (e.g., "Transaction not found", "Validation failed")
-    - For validation errors, returns details about what went wrong
-    - If transaction not found, user may not have access or it doesn't exist`,
+    description: `Edit a specific transaction by its ID. Returns a structured result with 'success' field. On success, includes updated transaction data and confirmation message. On failure, includes error details.`,
     properties: {
       id: {
         type: Type.NUMBER,
@@ -287,31 +264,7 @@ const editRecurringTransactionByIdDeclaration = {
   name: "editRecurringTransactionById",
   parameters: {
     type: Type.OBJECT,
-    description: `Edit a specific recurring transaction by its ID. Use this when the user wants to edit a recurring transaction (subscription, bill, salary, etc.).
-    
-    WORKFLOW:
-    1. User asks to edit a recurring transaction (e.g., "Edit my Netflix subscription", "Change my monthly rent to $1200")
-    2. Use queryTransactions on "RecurringTransaction" table to find matching recurring transactions (including 'id' column in SELECT)
-    3. DECISION POINT based on number of matches:
-       - If EXACTLY 1 match found: Immediately call this function with the ID and updates (no confirmation needed)
-       - If 2+ matches found: Present options to user, wait for them to choose, then call this function
-       - If 0 matches found: Inform user no matching recurring transactions were found
-    
-    NOTE: The "immediate edit" behavior (when exactly 1 match) reduces back-and-forth and provides 
-    a faster user experience. Only ask for confirmation when there's ambiguity (2+ matches).
-    
-    This function returns a structured result with a 'success' field.
-    
-    On SUCCESS (success=true):
-    - Returns updated recurring transaction data (id, amount, category, description, frequency, interval, dayOfWeek, dayOfMonth, monthOfYear, nextDue, startDate, type)
-    - Returns human-readable message confirming the changes
-    - May include warnings if category was normalized
-    - If frequency/timing fields changed, nextDue will be automatically recalculated
-    
-    On FAILURE (success=false):
-    - Returns error message (e.g., "Recurring transaction not found", "Validation failed")
-    - For validation errors, returns details about what went wrong
-    - If recurring transaction not found, user may not have access or it doesn't exist/is inactive`,
+    description: `Edit a specific recurring transaction by its ID. Returns a structured result with 'success' field. On success, includes updated recurring transaction data (with recalculated nextDue if frequency changed) and confirmation message. On failure, includes error details.`,
     properties: {
       id: {
         type: Type.NUMBER,
@@ -331,90 +284,7 @@ const queryTransactionsDeclaration = {
   name: "queryTransactions",
   parameters: {
     type: Type.OBJECT,
-    description: `Query transaction data from the database. This function serves multiple purposes:
-
-    1. **Generate Reports**: Query data to create financial insights and summaries
-    2. **Find Transactions for Editing**: Discover transaction IDs to edit specific transactions
-    3. **Find Transactions for Deleting**: Discover transaction IDs to delete specific transactions
-    
-    The function returns a structured result with a 'success' field.
-    
-    On SUCCESS (success=true):
-    - Returns 'data' array with query results (raw database rows, including 'id' field)
-    - Returns 'rowCount' (number of results)
-    - Returns 'sqlExecuted' (the query that ran)
-    - Use the 'id' field from results to edit or delete specific transactions
-    
-    On FAILURE (success=false):
-    - Returns validation error message explaining what went wrong
-    
-    Database Schema:
-    - "Transaction" table columns: id (INTEGER), userId (TEXT), date (TEXT), amount (REAL), category (TEXT), description (TEXT), type (TEXT: 'expense' or 'income'), createdAt (TEXT), updatedAt (TEXT)
-    - "RecurringTransaction" table columns: id (INTEGER), userId (TEXT), amount (REAL), category (TEXT), description (TEXT), type (TEXT: 'expense' or 'income'), frequency (TEXT), interval (INTEGER), dayOfWeek (INTEGER), dayOfMonth (INTEGER), monthOfYear (INTEGER), startDate (TEXT), nextDue (TEXT), isActive (INTEGER: 0 or 1), createdAt (TEXT), updatedAt (TEXT)
-    
-    CRITICAL SQL RULES:
-    1. Always include WHERE userId = '{USER_ID_PLACEHOLDER}' (system will inject actual userId)
-    2. Only SELECT queries allowed (no DELETE, UPDATE, INSERT, DROP, ALTER, CREATE, TRUNCATE, EXEC, PRAGMA)
-    3. MUST use LIMIT clause to restrict results (recommended LIMIT 50 or less for readability). System auto-adds LIMIT 100 if missing.
-    4. Can use SQLite functions: strftime, SUM, COUNT, AVG, MAX, MIN, GROUP BY, ORDER BY, etc.
-    5. Date format in database is ISO string (YYYY-MM-DD or YYYY-MM-DD HH:MM:SS)
-    6. Table names should be quoted with double quotes for SQLite compatibility (e.g., "Transaction")
-    
-    Common Query Examples:
-    
-    1. Total spending by category:
-       SELECT category, SUM(amount) as total FROM "Transaction" 
-       WHERE userId = '{USER_ID_PLACEHOLDER}' AND type = 'expense' 
-       GROUP BY category ORDER BY total DESC LIMIT 10
-    
-    2. Monthly spending totals:
-       SELECT strftime('%Y-%m', date) as month, SUM(amount) as total 
-       FROM "Transaction" WHERE userId = '{USER_ID_PLACEHOLDER}' AND type = 'expense' 
-       GROUP BY month ORDER BY month DESC LIMIT 12
-    
-    3. Recent transactions:
-       SELECT date, amount, category, description, type 
-       FROM "Transaction" WHERE userId = '{USER_ID_PLACEHOLDER}' 
-       ORDER BY date DESC LIMIT 10
-    
-    4. Income vs Expenses comparison:
-       SELECT type, SUM(amount) as total 
-       FROM "Transaction" WHERE userId = '{USER_ID_PLACEHOLDER}' 
-       GROUP BY type
-    
-    5. Spending in specific date range:
-       SELECT date, amount, category, description 
-       FROM "Transaction" WHERE userId = '{USER_ID_PLACEHOLDER}' 
-       AND date >= '2025-11-01' AND date <= '2025-11-30' 
-       ORDER BY date DESC LIMIT 50
-    
-    6. Average daily spending:
-       SELECT AVG(daily_total) as avg_per_day FROM (
-         SELECT date, SUM(amount) as daily_total 
-         FROM "Transaction" WHERE userId = '{USER_ID_PLACEHOLDER}' AND type = 'expense' 
-         GROUP BY date
-       ) LIMIT 1
-    
-    7. Find specific transaction for editing (by description/category):
-       SELECT id, date, amount, category, description, type 
-       FROM "Transaction" WHERE userId = '{USER_ID_PLACEHOLDER}' 
-       AND (description LIKE '%coffee%' OR category = 'Food & Dining') 
-       ORDER BY date DESC LIMIT 10
-    
-    8. Find specific transaction for deleting (by amount and date):
-       SELECT id, date, amount, category, description, type 
-       FROM "Transaction" WHERE userId = '{USER_ID_PLACEHOLDER}' 
-       AND amount = 50.00 AND category = 'Entertainment' 
-       AND date >= '2025-11-01' 
-       ORDER BY date DESC LIMIT 5
-    
-    9. Find transaction by approximate description:
-       SELECT id, date, amount, category, description, type 
-       FROM "Transaction" WHERE userId = '{USER_ID_PLACEHOLDER}' 
-       AND description LIKE '%salary%' 
-       ORDER BY date DESC LIMIT 5
-    
-    After receiving results, follow the appropriate action according to context (reporting, editing, deleting, etc.)`,
+    description: `Query transaction data from the database for reports, finding transactions to edit, or finding transactions to delete. Returns structured result with 'success' field. On success, includes 'data' array with query results, 'rowCount', and 'sqlExecuted'. On failure, includes validation error.`,
     properties: {
       queryDescription: {
         type: Type.STRING,
@@ -433,32 +303,7 @@ const deleteTransactionsDeclaration = {
   name: "deleteTransactions",
   parameters: {
     type: Type.OBJECT,
-    description: `Delete one or multiple one-time transactions by their IDs. Use this when the user wants to permanently remove specific transactions.
-    
-    WORKFLOW:
-    1. User asks to delete transaction(s) (e.g., "Delete that $50 coffee expense", "Delete all those duplicate entries")
-    2. Use queryTransactions on "Transaction" table to find matching transactions (including 'id' column in SELECT)
-    3. DECISION POINT based on number of matches - ALWAYS require confirmation:
-       - If EXACTLY 1 match found: Present the match with details (amount, category, date) and ASK FOR CONFIRMATION
-       - If 2+ matches found: Present ALL matches with details and ASK which one(s) to delete or if all should be deleted
-       - If 0 matches found: Inform user no matching transactions were found
-    
-    CRITICAL SAFETY RULES:
-    - ALWAYS get user confirmation before deletion, even with exactly 1 match
-    - Show what will be deleted (amount, category, date) before confirming
-    - Warn user: "This will permanently delete the transaction and cannot be undone"
-    - Never delete without explicit user confirmation
-    
-    This function returns a structured result with a 'success' field.
-    
-    On SUCCESS (success=true):
-    - Returns deletedCount (number of transactions deleted)
-    - Returns human-readable message (e.g., "Deleted 3 transactions")
-    
-    On FAILURE (success=false):
-    - Returns error message (e.g., "Transactions not found or unauthorized: 123, 456")
-    - Lists specific IDs that failed (not found or unauthorized)
-    - No partial deletions - all or nothing (transaction safety)`,
+    description: `Delete one or multiple one-time transactions by their IDs. Permanently removes transactions (cannot be undone). Returns a structured result with 'success' field. On success, includes deletedCount and confirmation message. On failure, includes error details. All-or-nothing operation.`,
     properties: {
       ids: {
         type: Type.ARRAY,
@@ -477,34 +322,7 @@ const deleteRecurringTransactionsDeclaration = {
   name: "deleteRecurringTransactions",
   parameters: {
     type: Type.OBJECT,
-    description: `Delete (deactivate) one or multiple recurring transactions by their IDs. Use this when the user wants to stop/cancel specific recurring transactions (subscriptions, bills, recurring income, etc.).
-    
-    WORKFLOW:
-    1. User asks to delete/cancel recurring transaction(s) (e.g., "Cancel my Netflix subscription", "Delete my monthly rent")
-    2. Use queryTransactions on "RecurringTransaction" table to find matching recurring transactions (including 'id' column in SELECT)
-    3. DECISION POINT based on number of matches - ALWAYS require confirmation:
-       - If EXACTLY 1 match found: Present the match with details (amount, category, frequency) and ASK FOR CONFIRMATION
-       - If 2+ matches found: Present ALL matches with details and ASK which one(s) to cancel or if all should be cancelled
-       - If 0 matches found: Inform user no matching recurring transactions were found
-    
-    CRITICAL SAFETY RULES:
-    - ALWAYS get user confirmation before deletion/deactivation, even with exactly 1 match
-    - Show what will be cancelled (amount, category, frequency, next due date) before confirming
-    - Explain: "This will deactivate the recurring transaction - no more future occurrences will be created"
-    - Never delete/deactivate without explicit user confirmation
-    
-    IMPORTANT: This DEACTIVATES recurring transactions (soft delete via isActive=false). They won't appear in active lists but are preserved for history.
-    
-    This function returns a structured result with a 'success' field.
-    
-    On SUCCESS (success=true):
-    - Returns deactivatedCount (number of recurring transactions deactivated)
-    - Returns human-readable message (e.g., "Deactivated 2 subscriptions")
-    
-    On FAILURE (success=false):
-    - Returns error message (e.g., "Recurring transactions not found, unauthorized, or already inactive: 45, 67")
-    - Lists specific IDs that failed (not found, unauthorized, or already inactive)
-    - No partial deletions - all or nothing (transaction safety)`,
+    description: `Delete (deactivate) one or multiple recurring transactions by their IDs. Deactivates recurring transactions (soft delete) - stops future occurrences but preserves history. Returns a structured result with 'success' field. On success, includes deactivatedCount and confirmation message. On failure, includes error details. All-or-nothing operation.`,
     properties: {
       ids: {
         type: Type.ARRAY,
