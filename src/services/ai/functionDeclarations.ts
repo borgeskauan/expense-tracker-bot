@@ -1,0 +1,299 @@
+import { Type } from "@google/genai";
+import { FREQUENCIES } from "../../config/frequencies";
+import { TRANSACTION_TYPES } from "../../config/transactionTypes";
+
+/**
+ * Common property definitions for transactions
+ * Reusable across all function declarations
+ */
+const COMMON_PROPERTIES = {
+  amount: {
+    type: Type.NUMBER,
+    description: "The amount of the transaction, must be positive",
+  },
+  category: {
+    type: Type.STRING,
+    description: "The category for the transaction. Choose from the appropriate list based on the type (expense or income).",
+  },
+  description: {
+    type: Type.STRING,
+    description: "Optional description of the transaction",
+  },
+  date: {
+    type: Type.STRING,
+    description: "The date in ISO format (YYYY-MM-DD)",
+  },
+  type: {
+    type: Type.STRING,
+    description: "The transaction type: 'expense' for money spent or 'income' for money received",
+    enum: [...TRANSACTION_TYPES],
+  },
+};
+
+/**
+ * Recurring-specific property definitions
+ * Used for recurring transaction declarations
+ */
+const RECURRING_PROPERTIES = {
+  frequency: {
+    type: Type.STRING,
+    description: "How often the transaction recurs",
+    enum: FREQUENCIES,
+  },
+  interval: {
+    type: Type.NUMBER,
+    description: "The interval for the frequency (e.g., 2 for 'every 2 weeks'). Must be at least 1.",
+  },
+  dayOfWeek: {
+    type: Type.NUMBER,
+    description: "For weekly frequency: Day of the week (0=Sunday, 1=Monday, 2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday)",
+  },
+  dayOfMonth: {
+    type: Type.NUMBER,
+    description: "For monthly frequency: Day of the month (1-31)",
+  },
+  monthOfYear: {
+    type: Type.NUMBER,
+    description: "For yearly frequency: Month of the year (0=January, 1=February, ..., 11=December)",
+  },
+  startDate: {
+    type: Type.STRING,
+    description: "The start date in ISO format (YYYY-MM-DD)",
+  },
+};
+
+/**
+ * Combined properties for recurring transactions (common + recurring-specific)
+ */
+const RECURRING_TRANSACTION_PROPERTIES = {
+  ...COMMON_PROPERTIES,
+  ...RECURRING_PROPERTIES,
+};
+
+/**
+ * Function declaration for getting current date information
+ */
+export const getCurrentDateDeclaration = {
+  name: "getCurrentDate",
+  parameters: {
+    type: Type.OBJECT,
+    description: "Get the current date and time information. Use this when you need to confirm today's date or calculate relative dates like 'yesterday' or 'last week'.",
+    properties: {},
+  },
+};
+
+/**
+ * Function declaration for adding a new transaction (expense or income)
+ */
+export const addTransactionDeclaration = {
+  name: "addTransaction",
+  parameters: {
+    type: Type.OBJECT,
+    description: "Add a new transaction (expense or income) for a user. This function returns a structured result with a 'success' field. On success (success=true), it includes a formatted message and transaction details. On failure (success=false), it includes validation errors in the 'error' object with 'validationErrors' array. IMPORTANT: Always check the 'success' field and handle both cases. If validation fails, explain the errors to the user in a friendly way and ask for the missing or corrected information.",
+    properties: {
+      transactionData: {
+        type: Type.OBJECT,
+        description: "The transaction data to add",
+        properties: COMMON_PROPERTIES,
+        required: ["date", "amount", "category", "type"],
+      },
+    },
+    required: ["transactionData"],
+  },
+};
+
+/**
+ * Function declaration for creating a recurring transaction (expense or income)
+ */
+export const addRecurringTransactionDeclaration = {
+  name: "createRecurringTransaction",
+  parameters: {
+    type: Type.OBJECT,
+    description: "Create a new recurring transaction (expense or income) that repeats on a regular schedule (daily, weekly, monthly, or yearly). This function returns a structured result with a 'success' field. On success (success=true), it includes a formatted message and recurring transaction details including when the next transaction is due. On failure (success=false), it includes validation errors in the 'error' object with 'validationErrors' array. IMPORTANT: Always check the 'success' field and handle both cases. If validation fails, explain the errors to the user in a friendly way and ask for the missing or corrected information.",
+    properties: {
+      recurringTransactionData: {
+        type: Type.OBJECT,
+        description: "The recurring transaction data to add",
+        properties: RECURRING_TRANSACTION_PROPERTIES,
+        required: ["amount", "category", "frequency", "type"],
+      },
+    },
+    required: ["recurringTransactionData"],
+  },
+};
+
+/**
+ * Function declaration for editing the most recent transaction
+ */
+export const editLastTransactionDeclaration = {
+  name: "editLastTransaction",
+  parameters: {
+    type: Type.OBJECT,
+    description: "Edit the most recently added transaction (expense or income). Use this when user wants to modify their last transaction - change amount, category, description, date, or type. This function returns a structured result with a 'success' field. On success (success=true), it includes updated transaction details with a message highlighting what changed. On failure (success=false), it includes validation errors. IMPORTANT: Always check the 'success' field. If no transactions exist, inform the user they need to add one first.",
+    properties: {
+      updates: {
+        type: Type.OBJECT,
+        description: "Fields to update - only include the fields the user wants to change",
+        properties: COMMON_PROPERTIES,
+      },
+      transactionType: {
+        type: Type.STRING,
+        description: "Optional filter to specify whether to edit last expense or last income. Use when user explicitly says 'edit last expense' or 'edit last income'. If not specified, edits the most recent transaction of any type.",
+        enum: [...TRANSACTION_TYPES],
+      },
+    },
+    required: ["updates"],
+  },
+};
+
+/**
+ * Function declaration for editing the most recent recurring transaction
+ */
+export const editLastRecurringTransactionDeclaration = {
+  name: "editLastRecurringTransaction",
+  parameters: {
+    type: Type.OBJECT,
+    description: "Edit the most recently added recurring transaction (expense or income). Use this when user wants to modify their last recurring/subscription transaction - change amount, category, description, frequency, interval, or type. This function returns a structured result with a 'success' field. On success (success=true), it includes updated recurring transaction details. On failure (success=false), it includes validation errors. IMPORTANT: Always check the 'success' field. If no recurring transactions exist, inform the user they need to create one first.",
+    properties: {
+      updates: {
+        type: Type.OBJECT,
+        description: "Fields to update - only include the fields the user wants to change",
+        properties: RECURRING_TRANSACTION_PROPERTIES,
+      },
+      transactionType: {
+        type: Type.STRING,
+        description: "Optional filter to specify whether to edit last recurring expense or last recurring income. Use when user explicitly says 'edit last recurring expense' or 'edit last recurring income'. If not specified, edits the most recent recurring transaction of any type.",
+        enum: [...TRANSACTION_TYPES],
+      },
+    },
+    required: ["updates"],
+  },
+};
+
+/**
+ * Function declaration for editing a specific transaction by ID
+ */
+export const editTransactionByIdDeclaration = {
+  name: "editTransactionById",
+  parameters: {
+    type: Type.OBJECT,
+    description: `Edit a specific transaction by its ID. Returns a structured result with 'success' field. On success, includes updated transaction data and confirmation message. On failure, includes error details.`,
+    properties: {
+      id: {
+        type: Type.NUMBER,
+        description: "The ID of the transaction to edit (obtained from queryTransactions results)",
+      },
+      updates: {
+        type: Type.OBJECT,
+        description: "Fields to update in the transaction - only include the fields the user wants to change",
+        properties: COMMON_PROPERTIES,
+      },
+    },
+    required: ["id", "updates"],
+  },
+};
+
+/**
+ * Function declaration for editing a specific recurring transaction by ID
+ */
+export const editRecurringTransactionByIdDeclaration = {
+  name: "editRecurringTransactionById",
+  parameters: {
+    type: Type.OBJECT,
+    description: `Edit a specific recurring transaction by its ID. Returns a structured result with 'success' field. On success, includes updated recurring transaction data (with recalculated nextDue if frequency changed) and confirmation message. On failure, includes error details.`,
+    properties: {
+      id: {
+        type: Type.NUMBER,
+        description: "The ID of the recurring transaction to edit (obtained from queryTransactions results on RecurringTransaction table)",
+      },
+      updates: {
+        type: Type.OBJECT,
+        description: "Fields to update in the recurring transaction - only include the fields the user wants to change",
+        properties: RECURRING_TRANSACTION_PROPERTIES,
+      },
+    },
+    required: ["id", "updates"],
+  },
+};
+
+/**
+ * Function declaration for querying transaction data
+ */
+export const queryTransactionsDeclaration = {
+  name: "queryTransactions",
+  parameters: {
+    type: Type.OBJECT,
+    description: `Query transaction data from the database for reports, finding transactions to edit, or finding transactions to delete. Returns structured result with 'success' field. On success, includes 'data' array with query results, 'rowCount', and 'sqlExecuted'. On failure, includes validation error.`,
+    properties: {
+      sqlQuery: {
+        type: Type.STRING,
+        description: "The SQL SELECT query to execute. MUST include 'WHERE userId = {USER_ID_PLACEHOLDER}' and LIMIT clause. Include 'id' column when finding transactions for editing/deleting. Use SQLite syntax.",
+      },
+      queryDescription: {
+        type: Type.STRING,
+        description: "Brief human-readable description of what the query does - for reports, editing, or deleting (for logging and user context)",
+      },
+    },
+    required: ["sqlQuery", "queryDescription"],
+  },
+};
+
+/**
+ * Function declaration for deleting one-time transactions
+ */
+export const deleteTransactionsDeclaration = {
+  name: "deleteTransactions",
+  parameters: {
+    type: Type.OBJECT,
+    description: `Delete one or multiple one-time transactions by their IDs. Permanently removes transactions (cannot be undone). Returns a structured result with 'success' field. On success, includes deletedCount and confirmation message. On failure, includes error details. All-or-nothing operation.`,
+    properties: {
+      ids: {
+        type: Type.ARRAY,
+        description: "Array of transaction IDs to delete (obtained from queryTransactions results on Transaction table). Can be single ID [123] or multiple [123, 456, 789]",
+        items: {
+          type: Type.NUMBER,
+          description: "Transaction ID"
+        }
+      }
+    },
+    required: ["ids"]
+  }
+};
+
+/**
+ * Function declaration for deleting (deactivating) recurring transactions
+ */
+export const deleteRecurringTransactionsDeclaration = {
+  name: "deleteRecurringTransactions",
+  parameters: {
+    type: Type.OBJECT,
+    description: `Delete (deactivate) one or multiple recurring transactions by their IDs. Deactivates recurring transactions (soft delete) - stops future occurrences but preserves history. Returns a structured result with 'success' field. On success, includes deactivatedCount and confirmation message. On failure, includes error details. All-or-nothing operation.`,
+    properties: {
+      ids: {
+        type: Type.ARRAY,
+        description: "Array of recurring transaction IDs to delete (obtained from queryTransactions results on RecurringTransaction table). Can be single ID [12] or multiple [12, 34, 56]",
+        items: {
+          type: Type.NUMBER,
+          description: "Recurring transaction ID"
+        }
+      }
+    },
+    required: ["ids"]
+  }
+};
+
+/**
+ * Array of all function declarations for Gemini AI
+ */
+export const FUNCTION_DECLARATIONS = [
+  getCurrentDateDeclaration,
+  addTransactionDeclaration,
+  addRecurringTransactionDeclaration,
+  editLastTransactionDeclaration,
+  editLastRecurringTransactionDeclaration,
+  editTransactionByIdDeclaration,
+  editRecurringTransactionByIdDeclaration,
+  queryTransactionsDeclaration,
+  deleteTransactionsDeclaration,
+  deleteRecurringTransactionsDeclaration
+];
