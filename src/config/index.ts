@@ -16,6 +16,7 @@ export const config = {
   geminiApiKey: process.env.GEMINI_API_KEY,
   geminiModel: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
   systemInstruction: getSystemInstruction(),
+  qdrantUrl: process.env.QDRANT_URL || 'http://localhost:6333',
   whatsapp: {
     apiUrl: process.env.WHATSAPP_API_URL || 'http://localhost:3000'
   }

@@ -1,8 +1,8 @@
 import { ContentListUnion, FunctionCallingConfigMode, GenerateContentConfig, GoogleGenAI } from '@google/genai';
-import { GenerateContentResponse, IAIService } from '../../types/ai';
-import { FunctionDeclarationService } from './functionDeclarationService';
+import { GenerateContentResponse, IAIConversationalService } from '../../../types/ai';
+import { FunctionDeclarationService } from '../functionDeclarationService';
 
-export class GeminiService implements IAIService {
+export class GeminiConversationalService implements IAIConversationalService {
   private ai: GoogleGenAI;
   private config: GenerateContentConfig;
   private model: string;

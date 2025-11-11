@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { AIMessageService } from '../services/ai/aiMessageService';
+import { AIMessageService } from '../services/ai/conversational/aiMessageService';
 import { WhatsAppController } from '../controllers/whatsappController';
 
 export function createWhatsAppRoutes(aiMessageService: AIMessageService) {

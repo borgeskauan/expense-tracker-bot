@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { AIMessageService } from '../services/ai/aiMessageService';
+import { AIMessageService } from '../services/ai/conversational/aiMessageService';
 import { whatsappService } from '../services/infrastructure/whatsappService';
 import { conversationService } from '../services/infrastructure/conversationService';
 import { WhatsAppWebhookPayload } from '../types/whatsapp';

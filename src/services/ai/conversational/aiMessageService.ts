@@ -1,13 +1,13 @@
-import { Content, FunctionCallResult, IAIService, IAIMessageService } from "../../types/ai";
-import { FunctionDeclarationService } from "./functionDeclarationService";
+import { Content, FunctionCallResult, IAIConversationalService, IAIMessageService } from "../../../types/ai";
+import { FunctionDeclarationService } from "../functionDeclarationService";
 
 
 export class AIMessageService implements IAIMessageService {
-  private readonly aiService: IAIService;
+  private readonly aiService: IAIConversationalService;
   private readonly functionDeclarationService: FunctionDeclarationService;
   private readonly MAX_ITERATIONS = 50;
 
-  constructor(aiService: IAIService, functionDeclarationService: FunctionDeclarationService) {
+  constructor(aiService: IAIConversationalService, functionDeclarationService: FunctionDeclarationService) {
     this.aiService = aiService;
     this.functionDeclarationService = functionDeclarationService;
   }

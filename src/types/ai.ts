@@ -16,7 +16,7 @@ export interface Part {
   };
 }
 
-export interface IAIService {
+export interface IAIConversationalService {
   generateContent(contents: Content[]): Promise<GenerateContentResponse>;
 }
 

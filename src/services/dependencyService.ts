@@ -1,5 +1,5 @@
-import { GeminiService } from './ai/geminiService';
-import { AIMessageService } from './ai/aiMessageService';
+import { GeminiConversationalService } from './ai/conversational/geminiService';
+import { AIMessageService } from './ai/conversational/aiMessageService';
 import { config } from '../config';
 import { FunctionDeclarationService } from './ai/functionDeclarationService';
 import { TransactionService } from './business/transactionService';
@@ -45,7 +45,7 @@ export class DependencyService {
       );
 
       // Create services with configuration from the config module
-      const geminiService = new GeminiService(
+      const geminiService = new GeminiConversationalService(
         config.geminiApiKey,
         config.geminiModel,
         config.systemInstruction,
