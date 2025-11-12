@@ -9,7 +9,7 @@ export type Payload = {
 };
 
 export type SearchHit = {
-  id: string | number;
+  id: string;
   score?: number;
   payload?: Payload | Record<string, unknown>;
 };
@@ -95,18 +95,17 @@ export class QdrantService {
     return hits;
   }
 
-  /**
-   * Finds a point by exact payload match on 'description'.
-   * Returns the first SearchHit or null if none found.
-   */
-  async findPointByDescription(description: string): Promise<SearchHit | null> {
-    if (!description || typeof description !== "string") {
-      throw new TypeError("description must be a non-empty string");
+  async findPointByKey(key: string, value: string): Promise<SearchHit | null> {
+    if (!key || typeof key !== "string") {
+      throw new TypeError("key must be a non-empty string");
+    }
+    if (!value || typeof value !== "string") {
+      throw new TypeError("value must be a non-empty string");
     }
 
     const response = await this.client.scroll(COLLECTION, {
       filter: {
-        must: [{ key: "description", match: { value: description } }],
+        must: [{ key, match: { value } }],
       },
       limit: 1,
     });

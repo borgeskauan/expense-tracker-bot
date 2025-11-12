@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
-import embedder from "./embedder";
 import qdrant, { Payload, SearchHit } from "./qdrant";
+import embedder from "./embedder";
 
 export class EmbeddingStore {
   collectionEnsured = false;
@@ -47,18 +47,13 @@ export class EmbeddingStore {
     return hits;
   }
 
-  /**
-   * Update a saved description's embedding by finding the point with the oldDescription
-   * and upserting it with the newDescription embedding while preserving metadata.
-   * Returns the ID of the updated point.
-   */
   async update(
-    oldDescription: string,
+    transactionId: string,
     newDescription: string,
     metadata?: Record<string, unknown> | null
   ): Promise<string> {
-    if (!oldDescription || typeof oldDescription !== "string") {
-      throw new TypeError("oldDescription must be a non-empty string");
+    if (!transactionId || typeof transactionId !== "string") {
+      throw new TypeError("transactionId must be a non-empty string");
     }
     if (!newDescription || typeof newDescription !== "string") {
       throw new TypeError("newDescription must be a non-empty string");
@@ -68,26 +63,20 @@ export class EmbeddingStore {
     await this.ensureCollectionIsCreated();
 
     // Try to find the point by exact payload match (no vector) first
-    let found = await qdrant.findPointByDescription(oldDescription);
+    let found = await qdrant.findPointByKey("transactionId", transactionId);
     if (!found) {
-      throw new Error("no point found with the provided oldDescription");
+      throw new Error("no point found with the provided transactionId");
     }
-
-    const id = String(found.id);
-
-    // Preserve existing metadata if available
-    const existingMetadata =
-      (found.payload as Payload | undefined)?.metadata ?? null;
 
     // Compute new embedding and upsert with same id
     const newVector = await embedder.embedText(newDescription);
     const newPayload: Payload = {
       description: newDescription,
-      metadata: metadata ?? existingMetadata,
+      metadata: metadata ?? found.payload ?? null,
     };
-    await qdrant.upsertPoint(id, newVector, newPayload);
+    await qdrant.upsertPoint(found.id, newVector, newPayload);
 
-    return id;
+    return found.id;
   }
 }
 
