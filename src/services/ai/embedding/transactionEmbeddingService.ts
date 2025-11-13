@@ -9,15 +9,18 @@ import { TransactionType } from '../../../config/transactionTypes';
 import { PrismaClient } from '../../../generated/prisma';
 import { PrismaClientManager } from '../../../lib/PrismaClientManager';
 import { UserContextProvider } from '../../../lib/UserContextProvider';
+import { config } from '../../../config';
 import embeddingStore from './embeddingStore';
 
 export class TransactionEmbeddingService {
   private prisma: PrismaClient;
   private userContext?: UserContextProvider;
+  private threshold: number;
 
   constructor(userContext?: UserContextProvider) {
     this.prisma = PrismaClientManager.getClient();
     this.userContext = userContext;
+    this.threshold = config.embeddingThreshold;
   }
 
   /**
@@ -95,19 +98,8 @@ export class TransactionEmbeddingService {
    * Search transactions by natural language description
    */
   async searchTransactionsByDescription(
-    query: string,
-    k: number = 5 
+    query: string
   ): Promise<ServiceResult<TransactionSearchResult[]>> {
-    // Validate k parameter
-    if (k < 1 || k > 20) {
-      console.warn(`[TransactionEmbedding] Invalid k parameter: ${k}. Must be between 1 and 20.`);
-      return failure(
-        'Invalid k parameter',
-        'VALIDATION_ERROR',
-        'k must be between 1 and 20'
-      );
-    }
-
     // Get userId from context
     const userId = this.getUserId();
     if (!userId) {
@@ -119,13 +111,17 @@ export class TransactionEmbeddingService {
       );
     }
 
-    console.log(`[TransactionEmbedding] Searching transactions for user ${userId} with query: "${query}" (k=${k})`);
+    console.log(`[TransactionEmbedding] Searching transactions for user ${userId} with query: "${query}" (threshold=${this.threshold})`);
 
     try {
-      const hits = await embeddingStore.query(query, k);
+      const hits = await embeddingStore.query(query, 20);
       console.log(`[TransactionEmbedding] Vector search returned ${hits.length} hits from Qdrant`);
 
-      const { onetimeIds, recurringIds, scoreMap } = this.parseEmbeddingHits(hits);
+      // Filter by threshold
+      const filteredHits = hits.filter(hit => (hit.score ?? 0) >= this.threshold);
+      console.log(`[TransactionEmbedding] ${filteredHits.length} results above threshold ${this.threshold}`);
+
+      const { onetimeIds, recurringIds, scoreMap } = this.parseEmbeddingHits(filteredHits);
       console.log(`[TransactionEmbedding] Parsed ${onetimeIds.length} one-time and ${recurringIds.length} recurring transaction IDs`);
 
       const transactions = await this.fetchTransactionsByIds(onetimeIds, recurringIds, userId);

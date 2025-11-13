@@ -112,11 +112,10 @@ export class FunctionDeclarationService {
     // Search transactions by semantic description (async)
     [
       "searchTransactionsByDescription",
-      async (params: { query: string, k?: number }) => {
+      async (params: { query: string }) => {
         console.log("Executing searchTransactionsByDescription with params:", params);
         return await this.embeddingService.searchTransactionsByDescription(
-          params.query,
-          params.k
+          params.query
         );
       }
     ],
@@ -153,6 +152,8 @@ export class FunctionDeclarationService {
     if (!func) {
       throw new Error(`Function '${functionName}' not found`);
     }
-    return await func(parameters);
+    const result = await func(parameters);
+    console.debug(`[FunctionDeclaration] Function '${functionName}' returned:`, JSON.stringify(result, null, 2));
+    return result;
   }
 }

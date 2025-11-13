@@ -304,10 +304,6 @@ export const searchTransactionsByDescriptionDeclaration = {
       query: {
         type: Type.STRING,
         description: "Natural language description to search for. Examples: 'coffee purchases', 'streaming subscriptions', 'grocery shopping', 'restaurant meals'. Be descriptive for better results."
-      },
-      k: {
-        type: Type.NUMBER,
-        description: "Number of top results to return (1-20, default: 5). Use higher values when user wants comprehensive results."
       }
     },
     required: ["query"]
