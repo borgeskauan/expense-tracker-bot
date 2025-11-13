@@ -5,6 +5,8 @@ import { FunctionDeclarationService } from './ai/functionDeclarationService';
 import { TransactionService } from './business/transactionService';
 import { RecurringTransactionService } from './business/recurringTransactionService';
 import { QueryExecutorService } from './business/queryExecutorService';
+import { TransactionEmbeddingService } from './ai/embedding/transactionEmbeddingService';
+import { UserContextProvider } from '../lib/UserContextProvider';
 
 export class DependencyService {
   private static instance: DependencyService;
@@ -34,14 +36,17 @@ export class DependencyService {
         throw new Error('GEMINI_API_KEY environment variable is required');
       }
 
-      const transactionService = new TransactionService();
-      const recurringTransactionService = new RecurringTransactionService();
+      const userContext = new UserContextProvider();
+      const transactionEmbeddingService = new TransactionEmbeddingService(userContext);
+      const transactionService = new TransactionService(userContext, transactionEmbeddingService);
+      const recurringTransactionService = new RecurringTransactionService(userContext, transactionEmbeddingService);
       const queryExecutorService = new QueryExecutorService();
 
       const functionDeclarationService = new FunctionDeclarationService(
         transactionService,
         recurringTransactionService,
-        queryExecutorService
+        queryExecutorService,
+        transactionEmbeddingService
       );
 
       // Create services with configuration from the config module
@@ -57,6 +62,7 @@ export class DependencyService {
       this.services.set('GeminiService', geminiService);
       this.services.set('AIMessageService', aiMessageService);
       this.services.set('functionDeclarationService', functionDeclarationService);
+      this.services.set('TransactionEmbeddingService', transactionEmbeddingService);
 
       this.initialized = true;
       console.log('DependencyService initialized successfully');
@@ -70,6 +76,10 @@ export class DependencyService {
   // Convenience getters for commonly used services
   get aiMessageService(): AIMessageService {
     return this.getService<AIMessageService>('AIMessageService');
+  }
+
+  get transactionEmbeddingService(): TransactionEmbeddingService {
+    return this.getService<TransactionEmbeddingService>('TransactionEmbeddingService');
   }
 
   private getService<T>(serviceName: string): T {

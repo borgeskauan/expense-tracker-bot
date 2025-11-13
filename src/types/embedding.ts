@@ -1,0 +1,43 @@
+import { TransactionType } from '../config/transactionTypes';
+import { TransactionData } from './models';
+
+/**
+ * Input for embedding a transaction
+ */
+export interface TransactionEmbeddingInput {
+  id: number;
+  description: string | null;
+  type: TransactionType;
+  kind: 'onetime' | 'recurring';
+  amount: number;  // For synthetic description
+  category: string; // For synthetic description
+  date: string;     // For synthetic description (recurring uses startDate)
+  userId: string;   // For user-scoped filtering
+}
+
+/**
+ * Metadata stored in Qdrant
+ */
+export interface TransactionEmbeddingMetadata {
+  transactionId: string;  // Prefixed: "T-123" or "RT-456"
+  transactionKind: 'onetime' | 'recurring';
+  transactionType: TransactionType;
+  userId: string;         // For user-scoped filtering
+}
+
+/**
+ * Search result with relevance score
+ */
+export interface TransactionSearchResult {
+  transaction: TransactionData;
+  score: number;
+  kind: 'onetime' | 'recurring';
+}
+
+/**
+ * Return type for embed/update operations
+ */
+export interface EmbeddingOperationResult {
+  qdrantId: string;
+  transactionId: string;
+}

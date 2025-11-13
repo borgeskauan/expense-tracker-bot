@@ -2,6 +2,7 @@ import { Transaction, RecurringTransactionInput, TransactionUpdateData, Recurrin
 import { TransactionService } from "../business/transactionService";
 import { RecurringTransactionService } from "../business/recurringTransactionService";
 import { QueryExecutorService } from "../business/queryExecutorService";
+import { TransactionEmbeddingService } from "./embedding/transactionEmbeddingService";
 import { TransactionType } from "../../config/transactionTypes";
 import { FUNCTION_DECLARATIONS } from "./functionDeclarations";
 
@@ -13,6 +14,7 @@ export class FunctionDeclarationService {
   private readonly transactionService: TransactionService;
   private readonly recurringTransactionService: RecurringTransactionService;
   private readonly queryExecutorService: QueryExecutorService;
+  private readonly embeddingService: TransactionEmbeddingService;
 
   private readonly functionMapping = new Map<string, Function>([
     // Date/Time functions
@@ -107,16 +109,29 @@ export class FunctionDeclarationService {
         );
       }
     ],
+    // Search transactions by semantic description (async)
+    [
+      "searchTransactionsByDescription",
+      async (params: { query: string, k?: number }) => {
+        console.log("Executing searchTransactionsByDescription with params:", params);
+        return await this.embeddingService.searchTransactionsByDescription(
+          params.query,
+          params.k
+        );
+      }
+    ],
   ]);
 
   constructor(
     transactionService: TransactionService, 
     recurringTransactionService: RecurringTransactionService,
-    queryExecutorService: QueryExecutorService
+    queryExecutorService: QueryExecutorService,
+    embeddingService: TransactionEmbeddingService
   ) {
     this.transactionService = transactionService;
     this.recurringTransactionService = recurringTransactionService;
     this.queryExecutorService = queryExecutorService;
+    this.embeddingService = embeddingService;
   }
 
   /**

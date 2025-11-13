@@ -7,18 +7,21 @@ import { MessageBuilder } from '../../lib/MessageBuilder';
 import { PrismaClientManager } from '../../lib/PrismaClientManager';
 import { TransactionType } from '../../config/transactionTypes';
 import { TransactionQueryService } from './transactionQueryService';
+import { TransactionEmbeddingService } from '../ai/embedding/transactionEmbeddingService';
 
 export class TransactionService {
   private baseOps: BaseTransactionOperations;
   private prisma: PrismaClient;
   private messageBuilder: MessageBuilder;
   private queryService: TransactionQueryService;
+  private embeddingService: TransactionEmbeddingService;
 
-  constructor(userContext?: UserContextProvider) {
+  constructor(userContext: UserContextProvider, embeddingService: TransactionEmbeddingService) {
     this.baseOps = new BaseTransactionOperations(userContext);
     this.prisma = PrismaClientManager.getClient();
     this.messageBuilder = new MessageBuilder();
     this.queryService = new TransactionQueryService(userContext);
+    this.embeddingService = embeddingService;
   }
 
   /**
@@ -66,6 +69,26 @@ export class TransactionService {
       });
     
       console.log(`Transaction added: $${transaction.amount} for ${transaction.category} on ${transaction.date} (${transaction.type})`);
+      
+      // Embed the transaction
+      const embeddingResult = await this.embeddingService.embedTransaction({
+        id: transaction.id,
+        description: transaction.description,
+        type: transaction.type as TransactionType,
+        kind: 'onetime',
+        amount: transaction.amount,
+        category: transaction.category,
+        date: transaction.date,
+        userId: transaction.userId,
+      });
+
+      if (!embeddingResult.success) {
+        return failure(
+          'Failed to create transaction embedding',
+          'EMBEDDING_ERROR',
+          embeddingResult.message
+        );
+      }
       
       // Build success message using MessageBuilder
       const message = this.messageBuilder.buildTransactionCreatedMessage(
@@ -178,6 +201,26 @@ export class TransactionService {
       });
 
       console.log(`Transaction updated: ID ${id}, changes:`, updateData);
+
+      // Update the embedding
+      const embeddingResult = await this.embeddingService.updateTransactionEmbedding({
+        id: updatedTransaction.id,
+        description: updatedTransaction.description,
+        type: updatedTransaction.type as TransactionType,
+        kind: 'onetime',
+        amount: updatedTransaction.amount,
+        category: updatedTransaction.category,
+        date: updatedTransaction.date,
+        userId: updatedTransaction.userId,
+      });
+
+      if (!embeddingResult.success) {
+        return failure(
+          'Failed to update transaction embedding',
+          'EMBEDDING_ERROR',
+          embeddingResult.message
+        );
+      }
 
       // Build success message
       const message = this.messageBuilder.buildTransactionUpdatedMessage(

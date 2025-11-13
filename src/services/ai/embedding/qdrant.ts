@@ -44,14 +44,28 @@ export class QdrantService {
   }
 
   /**
-   * Ensure an index on payload.description for fast exact matches.
-   * Use "keyword" for exact equality (case-sensitive), or switch to the
-   * commented "text" schema for full-text / case-insensitive contains.
+   * Ensure an index on payload.metadata.transactionId for fast exact matches.
+   * Use "keyword" for exact equality (case-sensitive).
    */
-  private async ensureDescriptionIndex(): Promise<void> {
+  private async ensureTransactionIdIndex(): Promise<void> {
     try {
       await this.client.createPayloadIndex(COLLECTION, {
-        field_name: "description",
+        field_name: "metadata.transactionId",
+        field_schema: "keyword",
+      });
+    } catch (err) {
+      if (!isAlreadyExists(err)) throw err;
+    }
+  }
+
+  /**
+   * Ensure an index on payload.metadata.userId for fast user filtering.
+   * Use "keyword" for exact equality (case-sensitive).
+   */
+  private async ensureUserIdIndex(): Promise<void> {
+    try {
+      await this.client.createPayloadIndex(COLLECTION, {
+        field_name: "metadata.userId",
         field_schema: "keyword",
       });
     } catch (err) {
@@ -61,7 +75,8 @@ export class QdrantService {
 
   async ensureCollectionWithDescriptionIndex(): Promise<void> {
     await this.ensureCollection();
-    await this.ensureDescriptionIndex();
+    await this.ensureTransactionIdIndex();
+    await this.ensureUserIdIndex();
   }
 
   async upsertPoint(
@@ -105,7 +120,7 @@ export class QdrantService {
 
     const response = await this.client.scroll(COLLECTION, {
       filter: {
-        must: [{ key, match: { value } }],
+        must: [{ key: `metadata.${key}`, match: { value } }],
       },
       limit: 1,
     });

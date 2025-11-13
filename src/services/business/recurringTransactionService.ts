@@ -8,6 +8,7 @@ import { MessageBuilder } from '../../lib/MessageBuilder';
 import { PrismaClientManager } from '../../lib/PrismaClientManager';
 import { TransactionType } from '../../config/transactionTypes';
 import { TransactionQueryService } from './transactionQueryService';
+import { TransactionEmbeddingService } from '../ai/embedding/transactionEmbeddingService';
 
 export class RecurringTransactionService {
   private baseOps: BaseTransactionOperations;
@@ -15,13 +16,15 @@ export class RecurringTransactionService {
   private prisma: PrismaClient;
   private messageBuilder: MessageBuilder;
   private queryService: TransactionQueryService;
+  private embeddingService: TransactionEmbeddingService;
 
-  constructor(userContext?: UserContextProvider) {
+  constructor(userContext: UserContextProvider, embeddingService: TransactionEmbeddingService) {
     this.baseOps = new BaseTransactionOperations(userContext);
     this.validator = new RecurringTransactionValidator();
     this.prisma = PrismaClientManager.getClient();
     this.messageBuilder = new MessageBuilder();
     this.queryService = new TransactionQueryService(userContext);
+    this.embeddingService = embeddingService;
   }
 
   /**
@@ -146,6 +149,26 @@ export class RecurringTransactionService {
       });
 
       console.log(`Recurring transaction created: $${recurringTransaction.amount} for ${recurringTransaction.category} ${data.frequency} (${data.type})`);
+
+      // Embed the recurring transaction
+      const embeddingResult = await this.embeddingService.embedTransaction({
+        id: recurringTransaction.id,
+        description: recurringTransaction.description,
+        type: recurringTransaction.type as TransactionType,
+        kind: 'recurring',
+        amount: recurringTransaction.amount,
+        category: recurringTransaction.category,
+        date: recurringTransaction.startDate,
+        userId: recurringTransaction.userId,
+      });
+
+      if (!embeddingResult.success) {
+        return failure(
+          'Failed to create recurring transaction embedding',
+          'EMBEDDING_ERROR',
+          embeddingResult.message
+        );
+      }
 
       // Build success message using MessageBuilder
       const message = this.messageBuilder.buildRecurringTransactionCreatedMessage(
@@ -304,6 +327,26 @@ export class RecurringTransactionService {
       });
 
       console.log(`Recurring transaction updated: ID ${id}, changes:`, updateData);
+
+      // Update the embedding
+      const embeddingResult = await this.embeddingService.updateTransactionEmbedding({
+        id: updatedRecurringTransaction.id,
+        description: updatedRecurringTransaction.description,
+        type: updatedRecurringTransaction.type as TransactionType,
+        kind: 'recurring',
+        amount: updatedRecurringTransaction.amount,
+        category: updatedRecurringTransaction.category,
+        date: updatedRecurringTransaction.startDate,
+        userId: updatedRecurringTransaction.userId,
+      });
+
+      if (!embeddingResult.success) {
+        return failure(
+          'Failed to update recurring transaction embedding',
+          'EMBEDDING_ERROR',
+          embeddingResult.message
+        );
+      }
 
       // Build success message
       const message = `Recurring ${finalType} updated successfully: $${updatedRecurringTransaction.amount} for ${updatedRecurringTransaction.category}${needsRecalculation ? ' (schedule recalculated)' : ''}`;
