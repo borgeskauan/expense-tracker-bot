@@ -28,7 +28,7 @@ export class WhatsAppService {
   async sendMessage(to: string, message: string): Promise<SendMessageResponse> {
     try {
       // Convert Markdown formatting to WhatsApp formatting
-      const formattedMessage = markdownToWhatsapp(message);
+      const formattedMessage = markdownToWhatsapp(message.trim());
       
       if (message !== formattedMessage) {
         console.log('Message formatting converted:', {

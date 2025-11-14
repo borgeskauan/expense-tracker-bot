@@ -26,8 +26,8 @@ export class WhatsAppController {
       // Validate payload
       if (!payload.remoteJid || !payload.text) {
         console.warn('Invalid webhook payload:', payload);
-        res.status(400).json({ 
-          error: 'Invalid payload',
+        res.status(200).json({ 
+          error: 'Payload was ignored due to missing fields',
           message: 'Missing required fields: remoteJid or text' 
         });
         return;
