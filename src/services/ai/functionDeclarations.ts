@@ -21,7 +21,7 @@ const COMMON_PROPERTIES = {
   },
   date: {
     type: Type.STRING,
-    description: "The date in ISO format (YYYY-MM-DD)",
+    description: "The date and optional time in ISO format. If user provides only date, use YYYY-MM-DD format. If user specifies a time (e.g., 'at 8pm', 'at 2:30 PM', 'in the morning'), include it using full ISO-8601 format with UTC timezone (YYYY-MM-DDTHH:mm:ss.sssZ). Examples: '2025-11-10' (date only) or '2025-11-10T20:00:00.000Z' (date with 8pm time in UTC).",
   },
   type: {
     type: Type.STRING,
@@ -58,7 +58,7 @@ const RECURRING_PROPERTIES = {
   },
   startDate: {
     type: Type.STRING,
-    description: "The start date in ISO format (YYYY-MM-DD)",
+    description: "The start date and optional time in ISO format. If user provides only date, use YYYY-MM-DD format. If user specifies a time, include it using full ISO-8601 format with UTC timezone (YYYY-MM-DDTHH:mm:ss.sssZ).",
   },
 };
 
