@@ -20,12 +20,12 @@ export class GeminiConversationalService implements IAIConversationalService {
       tools: [
         {
           functionDeclarations: functionDeclarationService.getFunctionDeclarations(),
-        },
+        }
       ],
       toolConfig: {
         functionCallingConfig: {
           mode: FunctionCallingConfigMode.AUTO
-        },
+        }
       }
     };
   }
