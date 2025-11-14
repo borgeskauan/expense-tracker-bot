@@ -1,4 +1,5 @@
 import { config } from '../../config';
+import { markdownToWhatsapp } from '../../lib/WhatsAppPostProcessor';
 
 export interface SendMessageRequest {
   to: string;
@@ -26,6 +27,16 @@ export class WhatsAppService {
    */
   async sendMessage(to: string, message: string): Promise<SendMessageResponse> {
     try {
+      // Convert Markdown formatting to WhatsApp formatting
+      const formattedMessage = markdownToWhatsapp(message);
+      
+      if (message !== formattedMessage) {
+        console.log('Message formatting converted:', {
+          original: message,
+          formatted: formattedMessage
+        });
+      }
+      
       const url = `${this.apiUrl}/send`;
       
       const response = await fetch(url, {
@@ -35,7 +46,7 @@ export class WhatsAppService {
         },
         body: JSON.stringify({
           to,
-          message,
+          message: formattedMessage,
         } as SendMessageRequest),
       });
 
@@ -45,7 +56,7 @@ export class WhatsAppService {
       }
 
       const data = await response.json() as SendMessageResponse;
-      console.log(`Message sent to ${to}: ${data.id} with content "${message}"`);
+      console.log(`Message sent to ${to}: ${data.id} with content "${formattedMessage}"`);
       return data;
     } catch (error) {
       console.error('Error sending WhatsApp message:', error);
