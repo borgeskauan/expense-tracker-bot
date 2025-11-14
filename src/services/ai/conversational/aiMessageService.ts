@@ -30,8 +30,37 @@ export class AIMessageService implements IAIMessageService {
       return this.buildSuccessResult(finalResponse, currentContents, originalHistoryLength);
     } catch (error) {
       console.error('Error in function calling:', error);
+      
+      // Handle model overload or internal errors gracefully
+      if (this.isModelOverloadError(error)) {
+        console.warn('Model overload detected, returning default message');
+        const defaultResponse = {
+          text: "I'm a bit busy right now. Please try again in a moment!",
+          functionCalls: []
+        };
+        this.addModelResponse(currentContents, defaultResponse);
+        return this.buildSuccessResult(defaultResponse, currentContents, originalHistoryLength);
+      }
+      
       throw error;
     }
+  }
+
+  /**
+   * Check if error is a model overload or internal error
+   */
+  private isModelOverloadError(error: any): boolean {
+    const errorMessage = error?.message?.toLowerCase() || '';
+    const errorString = String(error).toLowerCase();
+    
+    return (
+      errorMessage.includes('overload') ||
+      errorMessage.includes('internal error') ||
+      errorMessage.includes('503') ||
+      errorMessage.includes('429') ||
+      errorString.includes('overload') ||
+      errorString.includes('internal error')
+    );
   }
 
   private async processFunctionCalls(

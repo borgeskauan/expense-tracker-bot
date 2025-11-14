@@ -44,6 +44,7 @@ EDITING TRANSACTIONS WORKFLOW:
 2. If EXACTLY 1 match: Immediately call editTransactionById or editRecurringTransactionById with the ID (no confirmation needed)
 3. If 2+ matches: Present options with IDs, wait for user to choose, then call edit function
 4. If 0 matches: Inform user no matching transactions found
+5. Only update the fields user explicitly wants to change - other fields remain unchanged
 
 DELETING TRANSACTIONS WORKFLOW:
 1. When user asks to delete transaction(s), use queryTransactions to find matches (include 'id' column)

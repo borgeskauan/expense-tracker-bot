@@ -210,4 +210,53 @@ export class TransactionQueryService {
       );
     }
   }
+
+  /**
+   * Get multiple transactions by their IDs with ownership validation
+   * Useful for semantic search pattern: search returns IDs, then fetch full details
+   * @param ids - Array of transaction IDs
+   * @param userId - User ID for ownership validation
+   * @returns ServiceResult with array of transaction data
+   */
+  async getTransactionsByIds(ids: number[], userId: string): Promise<{ success: boolean; data?: TransactionData[]; message?: string; code?: string }> {
+    try {
+      if (!ids || ids.length === 0) {
+        return {
+          success: false,
+          message: 'No transaction IDs provided',
+          code: 'VALIDATION_ERROR'
+        };
+      }
+
+      const transactions = await this.prisma.transaction.findMany({
+        where: {
+          id: { in: ids },
+          userId, // Ownership validation
+        },
+        orderBy: { date: 'desc' }
+      });
+
+      const transactionData: TransactionData[] = transactions.map(t => ({
+        id: t.id,
+        amount: t.amount,
+        category: t.category,
+        description: t.description,
+        date: t.date,
+        type: t.type as TransactionType,
+      }));
+
+      return {
+        success: true,
+        data: transactionData,
+        message: `Found ${transactions.length} transaction(s)`
+      };
+    } catch (error) {
+      console.error('Error fetching transactions by IDs:', error);
+      return {
+        success: false,
+        message: 'Failed to fetch transactions',
+        code: 'DATABASE_ERROR'
+      };
+    }
+  }
 }

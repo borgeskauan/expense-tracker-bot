@@ -301,6 +301,28 @@ export const searchTransactionsByDescriptionDeclaration = {
 };
 
 /**
+ * Function declaration for fetching transaction details by IDs
+ */
+export const getTransactionDetailsByIdsDeclaration = {
+  name: "getTransactionDetailsByIds",
+  parameters: {
+    type: Type.OBJECT,
+    description: `Fetch full transaction details for multiple transaction IDs. Useful after semantic search to get complete information. Returns structured result with 'success' field and array of transaction data.`,
+    properties: {
+      ids: {
+        type: Type.ARRAY,
+        description: "Array of transaction IDs to fetch details for (obtained from semantic search results)",
+        items: {
+          type: Type.NUMBER,
+          description: "Transaction ID"
+        }
+      }
+    },
+    required: ["ids"]
+  }
+};
+
+/**
  * Array of all function declarations for Gemini AI
  */
 export const FUNCTION_DECLARATIONS = [
@@ -314,5 +336,6 @@ export const FUNCTION_DECLARATIONS = [
   queryTransactionsDeclaration,
   deleteTransactionsDeclaration,
   deleteRecurringTransactionsDeclaration,
-  searchTransactionsByDescriptionDeclaration
+  searchTransactionsByDescriptionDeclaration,
+  getTransactionDetailsByIdsDeclaration
 ];
