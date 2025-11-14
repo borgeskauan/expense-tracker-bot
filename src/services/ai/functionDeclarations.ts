@@ -289,21 +289,11 @@ export const searchTransactionsByDescriptionDeclaration = {
   name: "searchTransactionsByDescription",
   parameters: {
     type: Type.OBJECT,
-    description: `Search transactions using natural language description. Use this when:
-    - User describes what they're looking for (e.g., "coffee purchases", "grocery shopping", "Netflix subscription")
-    - Query is vague or semantic rather than structured
-    - User wants to find similar transactions
-    
-    DO NOT use this for:
-    - Structured queries with dates, amounts, aggregations (use queryTransactions instead)
-    - Generating reports or statistics (use queryTransactions instead)
-    - Deleting or editing by specific criteria (use queryTransactions to get IDs first)
-    
-    Returns transactions ranked by semantic similarity with relevance scores.`,
+    description: `Search transactions using natural language description. Returns transactions ranked by semantic similarity with relevance scores.`,
     properties: {
       query: {
         type: Type.STRING,
-        description: "Natural language description to search for. Examples: 'coffee purchases', 'streaming subscriptions', 'grocery shopping', 'restaurant meals'. Be descriptive for better results."
+        description: "Natural language description to search for. Be descriptive for better results."
       }
     },
     required: ["query"]
