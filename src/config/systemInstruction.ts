@@ -21,6 +21,12 @@ TIME EXTRACTION:
 - For vague times like "in the morning", use reasonable defaults: morning→T09:00:00.000Z, afternoon→T15:00:00.000Z, evening→T18:00:00.000Z, night→T21:00:00.000Z
 - If no time specified, use date-only format (YYYY-MM-DD)
 
+DATE DISPLAY FORMATTING:
+- When displaying dates to users, always format them as MM/DD/YYYY (e.g., "11/10/2025" instead of "2025-11-10")
+- When displaying dates with times, format as "MM/DD/YYYY at H:MM AM/PM" (e.g., "11/10/2025 at 8:00 PM")
+- Apply this formatting in ALL user-facing text: reports, query results, transaction lists, confirmations, summaries
+- NEVER show raw ISO format (YYYY-MM-DD or ISO-8601) to users
+
 QUERYING TRANSACTIONS:
 Database Schema:
 - "Transaction" table: id, userId, date, amount, category, description, type ('expense'/'income'), createdAt, updatedAt

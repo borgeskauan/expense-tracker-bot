@@ -10,14 +10,51 @@ import { TransactionData } from '../types/models';
  */
 export class MessageBuilder {
   /**
-   * Format a date as ISO string (YYYY-MM-DD)
+   * Format a date for user-friendly display
+   * Supports both date-only (YYYY-MM-DD) and date+time (ISO-8601) formats
+   * 
+   * @param date - Date object or ISO string
+   * @returns Formatted string: "MM/DD/YYYY" or "MM/DD/YYYY at H:MM AM/PM"
    */
   private formatDate(date: Date | string): string {
+    let dateObj: Date;
+    let hasTime = false;
+
     if (typeof date === 'string') {
-      // Extract just the date portion from ISO string (YYYY-MM-DD)
-      return date.split('T')[0];
+      // Check if the string contains time component (has 'T')
+      hasTime = date.includes('T');
+      dateObj = new Date(date);
+    } else {
+      dateObj = date;
+      hasTime = true; // Date objects always have time
     }
-    return date.toISOString().split('T')[0];
+
+    // Extract date components
+    const month = dateObj.getMonth() + 1; // 0-indexed, so add 1
+    const day = dateObj.getDate();
+    const year = dateObj.getFullYear();
+
+    // Format date as MM/DD/YYYY
+    const formattedDate = `${month}/${day}/${year}`;
+
+    // If no time component, return just the date
+    if (!hasTime) {
+      return formattedDate;
+    }
+
+    // Format time in 12-hour format with AM/PM
+    let hours = dateObj.getHours();
+    const minutes = dateObj.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    
+    // Convert to 12-hour format
+    hours = hours % 12;
+    hours = hours ? hours : 12; // 0 should be 12
+    
+    // Pad minutes with leading zero if needed
+    const minutesStr = minutes.toString().padStart(2, '0');
+
+    return `${formattedDate} at ${hours}:${minutesStr} ${ampm}`;
   }
 
   /**
