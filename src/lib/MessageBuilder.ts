@@ -10,14 +10,39 @@ import { TransactionData } from '../types/models';
  */
 export class MessageBuilder {
   /**
-   * Format a date as ISO string (YYYY-MM-DD)
+   * Format a date in a human-readable format (MM/DD/YYYY with optional time)
    */
   private formatDate(date: Date | string): string {
+    let dateObj: Date;
+    
     if (typeof date === 'string') {
-      // Extract just the date portion from ISO string (YYYY-MM-DD)
-      return date.split('T')[0];
+      // Parse ISO string to Date
+      dateObj = new Date(date);
+    } else {
+      dateObj = date;
     }
-    return date.toISOString().split('T')[0];
+    
+    // Format as MM/DD/YYYY
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const year = dateObj.getFullYear();
+    
+    let formatted = `${month}/${day}/${year}`;
+    
+    // Add time if it's not midnight (00:00:00)
+    const hours = dateObj.getHours();
+    const minutes = dateObj.getMinutes();
+    const seconds = dateObj.getSeconds();
+    
+    if (hours !== 0 || minutes !== 0 || seconds !== 0) {
+      // Format time in 12-hour format
+      const displayHours = hours % 12 || 12;
+      const displayMinutes = String(minutes).padStart(2, '0');
+      const ampm = hours >= 12 ? 'pm' : 'am';
+      formatted += ` at ${displayHours}:${displayMinutes}${ampm}`;
+    }
+    
+    return formatted;
   }
 
   /**

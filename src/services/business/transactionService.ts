@@ -70,24 +70,24 @@ export class TransactionService {
     
       console.log(`Transaction added: $${transaction.amount} for ${transaction.category} on ${transaction.date} (${transaction.type})`);
       
-      // Embed the transaction
-      const embeddingResult = await this.embeddingService.embedTransaction({
-        id: transaction.id,
-        description: transaction.description,
-        type: transaction.type as TransactionType,
-        kind: 'onetime',
-        amount: transaction.amount,
-        category: transaction.category,
-        date: transaction.date,
-        userId: transaction.userId,
-      });
+      // Embed the transaction (non-blocking - log errors but continue)
+      try {
+        const embeddingResult = await this.embeddingService.embedTransaction({
+          id: transaction.id,
+          description: transaction.description,
+          type: transaction.type as TransactionType,
+          kind: 'onetime',
+          amount: transaction.amount,
+          category: transaction.category,
+          date: transaction.date,
+          userId: transaction.userId,
+        });
 
-      if (!embeddingResult.success) {
-        return failure(
-          'Failed to create transaction embedding',
-          'EMBEDDING_ERROR',
-          embeddingResult.message
-        );
+        if (!embeddingResult.success) {
+          console.warn(`[TransactionService] Embedding failed for transaction ${transaction.id}: ${embeddingResult.message}`);
+        }
+      } catch (error) {
+        console.error(`[TransactionService] Embedding error for transaction ${transaction.id}:`, error);
       }
       
       // Build success message using MessageBuilder
@@ -202,24 +202,24 @@ export class TransactionService {
 
       console.log(`Transaction updated: ID ${id}, changes:`, updateData);
 
-      // Update the embedding
-      const embeddingResult = await this.embeddingService.updateTransactionEmbedding({
-        id: updatedTransaction.id,
-        description: updatedTransaction.description,
-        type: updatedTransaction.type as TransactionType,
-        kind: 'onetime',
-        amount: updatedTransaction.amount,
-        category: updatedTransaction.category,
-        date: updatedTransaction.date,
-        userId: updatedTransaction.userId,
-      });
+      // Update the embedding (non-blocking - log errors but continue)
+      try {
+        const embeddingResult = await this.embeddingService.updateTransactionEmbedding({
+          id: updatedTransaction.id,
+          description: updatedTransaction.description,
+          type: updatedTransaction.type as TransactionType,
+          kind: 'onetime',
+          amount: updatedTransaction.amount,
+          category: updatedTransaction.category,
+          date: updatedTransaction.date,
+          userId: updatedTransaction.userId,
+        });
 
-      if (!embeddingResult.success) {
-        return failure(
-          'Failed to update transaction embedding',
-          'EMBEDDING_ERROR',
-          embeddingResult.message
-        );
+        if (!embeddingResult.success) {
+          console.warn(`[TransactionService] Embedding update failed for transaction ${updatedTransaction.id}: ${embeddingResult.message}`);
+        }
+      } catch (error) {
+        console.error(`[TransactionService] Embedding update error for transaction ${updatedTransaction.id}:`, error);
       }
 
       // Build success message

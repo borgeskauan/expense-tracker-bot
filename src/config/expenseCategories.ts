@@ -17,6 +17,15 @@ export const EXPENSE_CATEGORIES = [
   'Insurance',
   'Savings & Investments',
   'Gifts & Donations',
+  'Fitness & Sports',
+  'Pet Care',
+  'Childcare',
+  'Home Maintenance',
+  'Car Maintenance',
+  'Subscriptions',
+  'Taxes',
+  'Legal & Professional',
+  'Charity',
   'Other'
 ] as const;
 
