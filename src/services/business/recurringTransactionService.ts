@@ -150,24 +150,24 @@ export class RecurringTransactionService {
 
       console.log(`Recurring transaction created: $${recurringTransaction.amount} for ${recurringTransaction.category} ${data.frequency} (${data.type})`);
 
-      // Embed the recurring transaction
-      const embeddingResult = await this.embeddingService.embedTransaction({
-        id: recurringTransaction.id,
-        description: recurringTransaction.description,
-        type: recurringTransaction.type as TransactionType,
-        kind: 'recurring',
-        amount: recurringTransaction.amount,
-        category: recurringTransaction.category,
-        date: recurringTransaction.startDate,
-        userId: recurringTransaction.userId,
-      });
+      // Embed the recurring transaction (non-blocking - log errors but continue)
+      try {
+        const embeddingResult = await this.embeddingService.embedTransaction({
+          id: recurringTransaction.id,
+          description: recurringTransaction.description,
+          type: recurringTransaction.type as TransactionType,
+          kind: 'recurring',
+          amount: recurringTransaction.amount,
+          category: recurringTransaction.category,
+          date: recurringTransaction.startDate,
+          userId: recurringTransaction.userId,
+        });
 
-      if (!embeddingResult.success) {
-        return failure(
-          'Failed to create recurring transaction embedding',
-          'EMBEDDING_ERROR',
-          embeddingResult.message
-        );
+        if (!embeddingResult.success) {
+          console.warn(`[RecurringTransactionService] Embedding failed for recurring transaction ${recurringTransaction.id}: ${embeddingResult.message}`);
+        }
+      } catch (error) {
+        console.error(`[RecurringTransactionService] Embedding error for recurring transaction ${recurringTransaction.id}:`, error);
       }
 
       // Build success message using MessageBuilder
@@ -328,24 +328,24 @@ export class RecurringTransactionService {
 
       console.log(`Recurring transaction updated: ID ${id}, changes:`, updateData);
 
-      // Update the embedding
-      const embeddingResult = await this.embeddingService.updateTransactionEmbedding({
-        id: updatedRecurringTransaction.id,
-        description: updatedRecurringTransaction.description,
-        type: updatedRecurringTransaction.type as TransactionType,
-        kind: 'recurring',
-        amount: updatedRecurringTransaction.amount,
-        category: updatedRecurringTransaction.category,
-        date: updatedRecurringTransaction.startDate,
-        userId: updatedRecurringTransaction.userId,
-      });
+      // Update the embedding (non-blocking - log errors but continue)
+      try {
+        const embeddingResult = await this.embeddingService.updateTransactionEmbedding({
+          id: updatedRecurringTransaction.id,
+          description: updatedRecurringTransaction.description,
+          type: updatedRecurringTransaction.type as TransactionType,
+          kind: 'recurring',
+          amount: updatedRecurringTransaction.amount,
+          category: updatedRecurringTransaction.category,
+          date: updatedRecurringTransaction.startDate,
+          userId: updatedRecurringTransaction.userId,
+        });
 
-      if (!embeddingResult.success) {
-        return failure(
-          'Failed to update recurring transaction embedding',
-          'EMBEDDING_ERROR',
-          embeddingResult.message
-        );
+        if (!embeddingResult.success) {
+          console.warn(`[RecurringTransactionService] Embedding update failed for recurring transaction ${updatedRecurringTransaction.id}: ${embeddingResult.message}`);
+        }
+      } catch (error) {
+        console.error(`[RecurringTransactionService] Embedding update error for recurring transaction ${updatedRecurringTransaction.id}:`, error);
       }
 
       // Build success message
@@ -456,7 +456,7 @@ export class RecurringTransactionService {
       return failure(
         'No recurring transaction IDs provided',
         'VALIDATION_ERROR',
-        'Please provide at least one recurring transaction ID to delete.'
+        'Please provide at least one recurring transaction ID to stop.'
       );
     }
 
@@ -469,7 +469,7 @@ export class RecurringTransactionService {
       return failure(
         'User context not available',
         'MISSING_CONTEXT',
-        'Unable to identify user for recurring transaction deletion'
+        'Unable to identify user for recurring transaction deactivation'
       );
     }
 
@@ -508,12 +508,12 @@ export class RecurringTransactionService {
         }
       });
 
-      console.log(`Deactivated ${result.count} recurring transaction(s) for user ${userId}`);
+      console.log(`Stopped ${result.count} recurring transaction(s) for user ${userId}`);
 
       // Build success message
       const message = result.count === 1 
-        ? 'Deactivated 1 recurring transaction'
-        : `Deactivated ${result.count} recurring transactions`;
+        ? 'Stopped 1 recurring transaction'
+        : `Stopped ${result.count} recurring transactions`;
 
       return success(
         { deactivatedCount: result.count },

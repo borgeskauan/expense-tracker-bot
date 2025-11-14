@@ -2,6 +2,7 @@ import { Transaction, RecurringTransactionInput, TransactionUpdateData, Recurrin
 import { TransactionService } from "../business/transactionService";
 import { RecurringTransactionService } from "../business/recurringTransactionService";
 import { QueryExecutorService } from "../business/queryExecutorService";
+import { TransactionQueryService } from "../business/transactionQueryService";
 import { TransactionEmbeddingService } from "./embedding/transactionEmbeddingService";
 import { TransactionType } from "../../config/transactionTypes";
 import { FUNCTION_DECLARATIONS } from "./functionDeclarations";
@@ -14,6 +15,7 @@ export class FunctionDeclarationService {
   private readonly transactionService: TransactionService;
   private readonly recurringTransactionService: RecurringTransactionService;
   private readonly queryExecutorService: QueryExecutorService;
+  private readonly queryService: TransactionQueryService;
   private readonly embeddingService: TransactionEmbeddingService;
 
   private readonly functionMapping = new Map<string, Function>([
@@ -119,17 +121,31 @@ export class FunctionDeclarationService {
         );
       }
     ],
+    // Get transaction details by IDs (async)
+    [
+      "getTransactionDetailsByIds",
+      async (params: { ids: number[] }) => {
+        console.log("Executing getTransactionDetailsByIds with params:", params);
+        // Get userId from context through the query service
+        const userIdObj: { userId?: string } = {};
+        // The queryService has userContext injected
+        const userId = this.queryService['userContext']?.getUserId() || '1';
+        return await this.queryService.getTransactionsByIds(params.ids, userId);
+      }
+    ],
   ]);
 
   constructor(
     transactionService: TransactionService, 
     recurringTransactionService: RecurringTransactionService,
     queryExecutorService: QueryExecutorService,
+    queryService: TransactionQueryService,
     embeddingService: TransactionEmbeddingService
   ) {
     this.transactionService = transactionService;
     this.recurringTransactionService = recurringTransactionService;
     this.queryExecutorService = queryExecutorService;
+    this.queryService = queryService;
     this.embeddingService = embeddingService;
   }
 

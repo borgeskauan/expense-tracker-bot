@@ -21,7 +21,7 @@ const COMMON_PROPERTIES = {
   },
   date: {
     type: Type.STRING,
-    description: "The date in ISO format (YYYY-MM-DD)",
+    description: "The date and optional time in ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss). If time is provided (e.g., '8 pm', '20:00'), include it in the ISO string. Examples: '2025-11-10' (date only) or '2025-11-10T20:00:00' (date with 8pm time)",
   },
   type: {
     type: Type.STRING,
@@ -58,7 +58,7 @@ const RECURRING_PROPERTIES = {
   },
   startDate: {
     type: Type.STRING,
-    description: "The start date in ISO format (YYYY-MM-DD)",
+    description: "The start date and optional time in ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss). If time is provided, include it in the ISO string",
   },
 };
 
@@ -267,11 +267,11 @@ export const deleteRecurringTransactionsDeclaration = {
   name: "deleteRecurringTransactions",
   parameters: {
     type: Type.OBJECT,
-    description: `Delete (deactivate) one or multiple recurring transactions by their IDs. Deactivates recurring transactions (soft delete) - stops future occurrences but preserves history. Returns a structured result with 'success' field. On success, includes deactivatedCount and confirmation message. On failure, includes error details. All-or-nothing operation.`,
+    description: `Deactivate (stop) one or multiple recurring transactions by their IDs. This disables future occurrences but preserves the history. Returns a structured result with 'success' field. On success, includes deactivatedCount and confirmation message. On failure, includes error details. All-or-nothing operation.`,
     properties: {
       ids: {
         type: Type.ARRAY,
-        description: "Array of recurring transaction IDs to delete (obtained from queryTransactions results on RecurringTransaction table). Can be single ID [12] or multiple [12, 34, 56]",
+        description: "Array of recurring transaction IDs to deactivate (obtained from queryTransactions results on RecurringTransaction table). Can be single ID [12] or multiple [12, 34, 56]",
         items: {
           type: Type.NUMBER,
           description: "Recurring transaction ID"
@@ -301,6 +301,28 @@ export const searchTransactionsByDescriptionDeclaration = {
 };
 
 /**
+ * Function declaration for fetching transaction details by IDs
+ */
+export const getTransactionDetailsByIdsDeclaration = {
+  name: "getTransactionDetailsByIds",
+  parameters: {
+    type: Type.OBJECT,
+    description: `Fetch full transaction details for multiple transaction IDs. Useful after semantic search to get complete information. Returns structured result with 'success' field and array of transaction data.`,
+    properties: {
+      ids: {
+        type: Type.ARRAY,
+        description: "Array of transaction IDs to fetch details for (obtained from semantic search results)",
+        items: {
+          type: Type.NUMBER,
+          description: "Transaction ID"
+        }
+      }
+    },
+    required: ["ids"]
+  }
+};
+
+/**
  * Array of all function declarations for Gemini AI
  */
 export const FUNCTION_DECLARATIONS = [
@@ -314,5 +336,6 @@ export const FUNCTION_DECLARATIONS = [
   queryTransactionsDeclaration,
   deleteTransactionsDeclaration,
   deleteRecurringTransactionsDeclaration,
-  searchTransactionsByDescriptionDeclaration
+  searchTransactionsByDescriptionDeclaration,
+  getTransactionDetailsByIdsDeclaration
 ];

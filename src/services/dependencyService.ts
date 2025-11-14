@@ -5,6 +5,7 @@ import { FunctionDeclarationService } from './ai/functionDeclarationService';
 import { TransactionService } from './business/transactionService';
 import { RecurringTransactionService } from './business/recurringTransactionService';
 import { QueryExecutorService } from './business/queryExecutorService';
+import { TransactionQueryService } from './business/transactionQueryService';
 import { TransactionEmbeddingService } from './ai/embedding/transactionEmbeddingService';
 import { UserContextProvider } from '../lib/UserContextProvider';
 
@@ -41,11 +42,13 @@ export class DependencyService {
       const transactionService = new TransactionService(userContext, transactionEmbeddingService);
       const recurringTransactionService = new RecurringTransactionService(userContext, transactionEmbeddingService);
       const queryExecutorService = new QueryExecutorService();
+      const queryService = new TransactionQueryService(userContext);
 
       const functionDeclarationService = new FunctionDeclarationService(
         transactionService,
         recurringTransactionService,
         queryExecutorService,
+        queryService,
         transactionEmbeddingService
       );
 

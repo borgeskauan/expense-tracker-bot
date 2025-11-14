@@ -12,6 +12,12 @@ export const INCOME_CATEGORIES = [
   'Refunds',
   'Bonuses',
   'Side Hustle',
+  'Dividends',
+  'Interest',
+  'Pension',
+  'Government Benefits',
+  'Commission',
+  'Royalties',
   'Other'
 ] as const;
 
