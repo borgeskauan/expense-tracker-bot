@@ -48,7 +48,7 @@ export function calculateNextDueDate(
   
   switch (frequency) {
     case "daily":
-      nextDue.setDate(nextDue.getDate() + interval);
+      nextDue.setUTCDate(nextDue.getUTCDate() + interval);
       break;
       
     case "weekly":
@@ -59,20 +59,20 @@ export function calculateNextDueDate(
         throw new Error("dayOfWeek must be between 0 (Sunday) and 6 (Saturday)");
       }
       
-      // Find next occurrence of the specified day of week
-      const currentDay = nextDue.getDay();
+      // Find next occurrence of the specified day of week (using UTC to avoid timezone issues)
+      const currentDay = nextDue.getUTCDay();
       let daysUntilTarget = (dayOfWeek - currentDay + 7) % 7;
       
-      // If it's the same day and we're starting today, move to next week
+      // If it's the same day and we're starting today, move to next week (Option B behavior)
       if (daysUntilTarget === 0) {
         daysUntilTarget = 7;
       }
       
-      nextDue.setDate(nextDue.getDate() + daysUntilTarget);
+      nextDue.setUTCDate(nextDue.getUTCDate() + daysUntilTarget);
       
       // Add additional weeks if interval > 1
       if (interval > 1) {
-        nextDue.setDate(nextDue.getDate() + (interval - 1) * 7);
+        nextDue.setUTCDate(nextDue.getUTCDate() + (interval - 1) * 7);
       }
       break;
       
@@ -85,11 +85,11 @@ export function calculateNextDueDate(
       }
       
       // Move to next month first
-      nextDue.setMonth(nextDue.getMonth() + interval);
+      nextDue.setUTCMonth(nextDue.getUTCMonth() + interval);
       
       // Set the day, handling months with fewer days
-      const targetMonth = nextDue.getMonth();
-      nextDue.setDate(Math.min(dayOfMonth, getDaysInMonth(nextDue.getFullYear(), targetMonth)));
+      const targetMonth = nextDue.getUTCMonth();
+      nextDue.setUTCDate(Math.min(dayOfMonth, getDaysInMonth(nextDue.getUTCFullYear(), targetMonth)));
       break;
       
     case "yearly":
@@ -99,22 +99,22 @@ export function calculateNextDueDate(
         }
         
         // Move to next year first
-        nextDue.setFullYear(nextDue.getFullYear() + interval);
+        nextDue.setUTCFullYear(nextDue.getUTCFullYear() + interval);
         
         // Set the target month
-        nextDue.setMonth(monthOfYear);
+        nextDue.setUTCMonth(monthOfYear);
         
         // Handle day-of-month edge cases (e.g., Feb 30 -> Feb 28/29)
-        const targetMonth = nextDue.getMonth();
-        const currentDay = nextDue.getDate();
-        const daysInTargetMonth = getDaysInMonth(nextDue.getFullYear(), targetMonth);
+        const targetMonth = nextDue.getUTCMonth();
+        const currentDay = nextDue.getUTCDate();
+        const daysInTargetMonth = getDaysInMonth(nextDue.getUTCFullYear(), targetMonth);
         
         if (currentDay > daysInTargetMonth) {
-          nextDue.setDate(daysInTargetMonth);
+          nextDue.setUTCDate(daysInTargetMonth);
         }
       } else {
         // No month specified, just add years
-        nextDue.setFullYear(nextDue.getFullYear() + interval);
+        nextDue.setUTCFullYear(nextDue.getUTCFullYear() + interval);
       }
       break;
       
@@ -129,7 +129,7 @@ export function calculateNextDueDate(
  * Get number of days in a month
  */
 function getDaysInMonth(year: number, month: number): number {
-  return new Date(year, month + 1, 0).getDate();
+  return new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
 }
 
 /**
