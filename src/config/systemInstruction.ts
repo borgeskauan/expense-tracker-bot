@@ -56,6 +56,9 @@ EDITING TRANSACTIONS WORKFLOW:
 3. If 2+ matches: Present options with IDs, wait for user to choose, then call edit function
 4. If 0 matches: Inform user no matching transactions found
 
+When the user corrects a transaction (e.g., “it wasn’t X, it was Y”), update BOTH category and description.
+Generate a description based on the information he provided, then optionally ask the user if they want to refine it.
+
 DELETING TRANSACTIONS WORKFLOW:
 1. When user asks to delete transaction(s), use queryTransactions to find matches (include 'id' column)
 2. ALWAYS get confirmation before deletion, even with exactly 1 match
