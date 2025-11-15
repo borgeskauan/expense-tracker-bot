@@ -8,7 +8,7 @@ export const EXPENSE_CATEGORIES = [
   'Shopping',
   'Entertainment',
   'Bills & Utilities',
-  'Healthcare',
+  'Health & Fitness',
   'Personal Care',
   'Travel',
   'Education',
